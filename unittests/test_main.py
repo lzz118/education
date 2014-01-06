@@ -3,16 +3,20 @@ Created on Dec 1, 2013
 
 @author: Chris
 '''
+
+from google.appengine.ext import db
+from google.appengine.api import memcache
+from google.appengine.api import urlfetch
+from google.appengine.api import users
+from google.appengine.ext import testbed
+from google.appengine.ext import blobstore
+
+from django.utils import simplejson as json
+from time import sleep
+from webtest import TestApp
+import webapp2
 import unittest
 import logging
-from time import sleep
-from google.appengine.api import users
-from django.utils import simplejson as json
-from google.appengine.api import urlfetch
-from google.appengine.api import memcache
-from google.appengine.ext import testbed
-from google.appengine.ext import db
-import webapp2
 import main
 
 class Test_Quest(unittest.TestCase):
@@ -48,7 +52,26 @@ class Test_Quest(unittest.TestCase):
         # Let's check if the response is correct.
         self.assertEqual(response.status_int, 200)
         self.assertEqual(True, "<form action=" in response.body)
-            
+    
+    def test_file_upload(self):
+        app = TestApp(main.app)
+        file_content="1, user1, developer\n2, user2, developer2"  
+        response = app.post('/upload', upload_files=[
+            ('file', 'test_file.csv', file_content,),
+            ])
+        
+        # Check the content is valid
+        self.assertEqual(response.status_int, 200)
+        self.assertEqual(True, "File has uploaded" in response.body)
+        
+        links = response.html.find_all("a")
+        self.assertEqual(1, len(links))
+        
+        # Check if the link is valid
+        blobs = blobstore.BlobInfo.all().fetch(limit=2)
+        self.assertEqual(1, len(blobs))
+        self.assertEqual(links[0]['href'], "/serve/%s" % str(blobs[0].key()))
+
     def test_pycrypto(self):
         from Crypto.PublicKey import RSA
         from Crypto import Random
