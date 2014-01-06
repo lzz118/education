@@ -20,4 +20,4 @@ install:
   - pip install NoseGAE
 # command to run tests
 #script:  python unittests/test_main.py
-script: nosetests --with-gae 
+script: nosetests --with-gae --without-sandbox 
