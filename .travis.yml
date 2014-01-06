@@ -17,6 +17,7 @@ install:
   - pip install webtest
   - pip install pycrypto
   - pip install pyyaml
+  - pip install NoseGAE
 # command to run tests
 #script:  python unittests/test_main.py
-script: nosetests -w unittests
+script: nosetests --with-gae 
