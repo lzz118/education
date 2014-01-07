@@ -38,18 +38,16 @@
   
   <body ng-controller="APITestController">
     This is a single page angular app used to test the API.
-    <ul>
-      <li> login </li>
-      <li> logout </li>
-      <li> Simple File Post for now since AJAX file uploads are more complex.
+    
+      <div> login </div>
+      <div> logout </div><br>
+      <div> Simple File Post for now since AJAX file uploads are more complex.
         <form action="/upload" enctype="multipart/form-data" method="post"><input type="file" name="file"/>
           File description: <input type="input" ng-model="file_data.description"><br> 
           <input type="submit" />
         </form>
-        
-      
-      </li>
-      <li> File viewing and editing editing without the file upload part <br>
+      </div><br>
+      <div> File viewing and editing editing without the file upload part <br>
            File ID: <input type="input" ng-model="file_data.fileId">
            File name: <input type="input" ng-model="file_data.name">
            File description: <input type="input" ng-model="file_data.description"><br>   
@@ -57,8 +55,8 @@
         <input type="submit" value="Get file {{file_data.fileId}}" ng-click="fetch_file(file_data.fileId);">
         <input type="submit" value="Edit file data {{file_data.fileId}}" ng-click="create_edit_file(file_data.fileId);">
         <!-- <input type="submit" value="Create file (not yet supported)" ng-click="create_edit_file();"> -->
-      </li>
-    </ul>
+      </div><br>
+
     File data <pre>{{file_data}}</pre>
     Last result<pre>{{last_result}}</pre>
 

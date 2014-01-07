@@ -87,7 +87,7 @@ class Test_CSV_Row_Encryption(unittest.TestCase):
 
         # Let's check if the response is correct.
         self.assertEqual(response.status_int, 200)
-        self.assertEqual(True, "<form action=" in response.body)
+        self.assertEqual(True, "AJAX Test GUI" in response.body)
         self.assertEqual(0, len(response.html.find_all('li')))
     
     def test_crypt(self):

@@ -12,7 +12,13 @@ from Crypto import Random
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
-        self.response.out.write('''<html><body><form action="/upload" enctype="multipart/form-data" method="post"><input type="file" name="file"/><input type="submit" /></form><body/><html/>''')
+        landing_page = """
+        <html><body>
+          <a href="/static/index.html">AJAX Test GUI</a><br>
+          <a href="/api/file">all files</a>
+        <body/><html/>
+        """
+        self.response.out.write(landing_page)
 
 class UploadHandler(webapp2.RequestHandler):
     

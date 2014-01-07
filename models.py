@@ -30,5 +30,3 @@ class ScheduledUploadFileAssociation(db.Model):
   #schedule
   file = db.ReferenceProperty(File, required=True)
   created = db.DateTimeProperty(auto_now_add=True)
-
-
