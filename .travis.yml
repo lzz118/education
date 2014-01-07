@@ -21,4 +21,4 @@ install:
   - pip install coverage
 # command to run tests
 #script:  python unittests/test_main.py
-script: nosetests --with-gae --without-sandbox --with-coverage --cover-package=main
+script: nosetests --with-gae --without-sandbox --with-coverage --cover-package=main,models

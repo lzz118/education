@@ -1,0 +1,89 @@
+<!doctype html>
+<html ng-app="myApp">
+  <header>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.1/angular.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.1/angular-resource.min.js"></script>
+ 
+    <script language="javascript" type="text/javascript">
+      //You need to add myApp to a module and provide access to any needed services.
+      angular.module('myApp', ['ngResource']);
+      
+      //Add a controller that will share the same "scope" as some HTML element
+      function APITestController($scope, $resource){
+        $scope.file_data = {"name":"New CSV file", 
+                            "description": "Default description",
+                            "fileId": null};
+        
+        $scope.last_result = {};
+        var File = $resource('/file/:fileId', {fileId:'@id'});
+          
+        // posting without and id should result in creating an object.
+        $scope.fetch_file = function(id){
+          var file = File.get({fileId:id}, function() {
+                 $scope.last_result = file;
+            });
+        },
+        $scope.create_edit_file = function(id){
+          var file = File.save({fileId:id},$scope.file_data, function() {
+                 $scope.last_result = file;
+            });
+        }
+        
+        
+        //Add another variable to the $scope here.
+        
+      };
+    </script>
+  </header>
+  
+  <body ng-controller="APITestController">
+    This is a single page angular app used to test the API.
+    <ul>
+      <li> login </li>
+      <li> logout </li>
+      <li> Simple File Post for now since AJAX file uploads are more complex.
+        <form action="/upload" enctype="multipart/form-data" method="post"><input type="file" name="file"/>
+          File description: <input type="input" ng-model="file_data.description"><br> 
+          <input type="submit" />
+        </form>
+        
+      
+      </li>
+      <li> File viewing and editing editing without the file upload part <br>
+           File ID: <input type="input" ng-model="file_data.fileId">
+           File name: <input type="input" ng-model="file_data.name">
+           File description: <input type="input" ng-model="file_data.description"><br>   
+        <input type="submit" value="Get files" ng-click="fetch_file();"> 
+        <input type="submit" value="Get file {{file_data.fileId}}" ng-click="fetch_file(file_data.fileId);">
+        <input type="submit" value="Edit file data {{file_data.fileId}}" ng-click="create_edit_file(file_data.fileId);">
+        <!-- <input type="submit" value="Create file (not yet supported)" ng-click="create_edit_file();"> -->
+      </li>
+    </ul>
+    File data <pre>{{file_data}}</pre>
+    Last result<pre>{{last_result}}</pre>
+
+<!--
+Add basic Google login support to associate files with uploading user
+api/file:  POST with file as attachment
+Provide hasHeaderRow (default=true) as a parameter. 
+api/file/1234: POST edit the meta data for an existing file and replace the file if there is an attachment. 
+api/file: GET list the last 50 uploaded files
+api/file/1234: GET the file with passed in id
+api/file/1234: DELETE the file with passed in id
+api/download/1234: download file data. url option to view data as text. 
+api/append_files: POST create a new file with appended contents of files. 
+api/condense_file/1234: POST remove duplicates in file based on options
+api/decrypt_and_download/1234: pass in private key and download unencrypted data. This will be mainly used for testing that all encryption and decryption is working properly. 
+api/scheduled_upload: POST
+api/scheduled_upload/1234: POST
+api/scheduled_upload: GET
+api/scheduled_upload/1234: GET
+api/scheduled_upload/1234: DELETE
+api/scheduled_upload_association:
+create, edit, list, fetch, delete
+api/public_key
+create, edit, list, fetch, delete
+-->
+  </body>
+
+</html>
