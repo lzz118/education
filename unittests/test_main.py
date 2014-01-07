@@ -58,7 +58,7 @@ class TestbedWithFiles(testbed.Testbed):
         self._register_stub('blobstore', blob_stub)
         self._register_stub('file', file_stub)
 
-class Test_Quest(unittest.TestCase):
+class Test_CSV_Row_Encryption(unittest.TestCase):
 
     def setUp(self):
         self.testbed = TestbedWithFiles()
@@ -106,7 +106,7 @@ class Test_Quest(unittest.TestCase):
         
         # Check the content is valid
         self.assertEqual(response.status_int, 200)
-        self.assertEqual(True, "File has uploaded" in response.body)
+        self.assertEqual(True, "File 1" in response.body)
         
         links = response.html.find_all("a")
         self.assertEqual(1, len(links))
@@ -124,10 +124,7 @@ class Test_Quest(unittest.TestCase):
                 ('file', 'file.csv', csv_file,),
             ])
         self.assertEqual(response.status_int, 200)
-        self.assertEqual(True, "File has uploaded" in response.body)
-
-        #response = app.get('/')
-        #self.assertEqual(1, len(response.html.find_all('li')))
+        self.assertEqual(True, "File 1" in response.body)
 
         blobs = blobstore.BlobInfo.all().fetch(limit=2)
         self.assertEqual(1, len(blobs))

@@ -41,14 +41,6 @@ class UploadHandler(webapp2.RequestHandler):
         # encode the byte data into ASCII data so that it could be printed out in the browser
         return enc_data[0].encode('base64')
     
-    def old_crypt(self, plaintext):
-        # Use a fixed private key here to get a deterministic result for testing
-        public_key = key.publickey()
-        enc_data = public_key.encrypt(plaintext, 32)
-        
-        # encode the byte data into ASCII data so that it could be printed out in the browser
-        return enc_data[0].encode('base64')
-
     def post(self):
         rows=self.request.POST.get('file').value
         file_name = files.blobstore.create(mime_type='text/plain')
@@ -60,9 +52,24 @@ class UploadHandler(webapp2.RequestHandler):
                 writer.writerow(row)
         files.finalize(file_name)
         
-        blob_key = files.blobstore.get_blob_key(file_name)
-        self.response.out.write('<html><body>File has uploaded, please download the file at <a href="/serve/%s">here</a>' % blob_key )
-    
+        #blob_key = files.blobstore.get_blob_key(file_name)
+        #self.response.out.write('<html><body>File has uploaded, please download the file at <a href="/serve/%s">here</a>' % blob_key )
+        blobs = blobstore.BlobInfo.all()
+        blob_links = [
+                      '<a href="/serve/%s">File %s</a><br/>' % (blob.key(), index+1)
+                      for index, blob in enumerate(blobs)
+                     ]
+        
+        self.response.out.write(
+            '''
+               <html>
+                 <body>
+                 <form action="/upload" enctype="multipart/form-data" method="post"><input type="file" name="file"/><input type="submit" /></form><br>
+                 %s
+                 </body>
+                </html>
+            ''' % "".join(blob_links)
+        )
 class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
     def get(self, resource):
         resource = str(urllib.unquote(resource))
