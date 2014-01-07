@@ -1,6 +1,8 @@
 from __future__ import with_statement
 import urllib
 import webapp2
+import csv
+from StringIO import StringIO
 
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
@@ -13,7 +15,10 @@ class MainHandler(webapp2.RequestHandler):
         self.response.out.write('''<html><body><form action="/upload" enctype="multipart/form-data" method="post"><input type="file" name="file"/><input type="submit" /></form><body/><html/>''')
 
 class UploadHandler(webapp2.RequestHandler):
-    def crypt(self, plaintext):
+    
+        
+    @staticmethod
+    def crypt(plaintext):
         # Use a fixed private key here to get a deterministic result for testing
         key = RSA.importKey('''-----BEGIN RSA PRIVATE KEY-----
         MIICXAIBAAKBgQCIJAdEmiawxYaf/ZTv/679mwxiwJPhHsKPIfoW8w0IRy0oZhkS
@@ -30,6 +35,14 @@ class UploadHandler(webapp2.RequestHandler):
         d2uk2n8NSeCcIz7NggkCQFylnC7S7hlgZyUvaIpBsGzzdr8cyrTol4T1G9n7G2sE
         Q1pc7/sXaYlMBZxKrCMWjAol9AZ2Cfpj6x5A3XnTm98=
         -----END RSA PRIVATE KEY-----''')
+    
+        enc_data = key.encrypt(plaintext, 32)
+        
+        # encode the byte data into ASCII data so that it could be printed out in the browser
+        return enc_data[0].encode('base64')
+    
+    def old_crypt(self, plaintext):
+        # Use a fixed private key here to get a deterministic result for testing
         public_key = key.publickey()
         enc_data = public_key.encrypt(plaintext, 32)
         
@@ -37,15 +50,16 @@ class UploadHandler(webapp2.RequestHandler):
         return enc_data[0].encode('base64')
 
     def post(self):
-        rows=self.request.POST.get('file').value.split("\n")
+        rows=self.request.POST.get('file').value
         file_name = files.blobstore.create(mime_type='text/plain')
         with files.open(file_name, 'a') as f:
-            for row in rows:
-                items = row.split(",")
-                if len(items) > 1:
-                    items[1] = self.crypt(items[1])
-                f.write("%s\n" % (",".join(items)))
+            writer = csv.writer(f , delimiter=',')
+            for row in csv.reader(StringIO(rows), delimiter=','):
+                if len(row) > 1:
+                    row[1] = self.crypt(row[1])
+                writer.writerow(row)
         files.finalize(file_name)
+        
         blob_key = files.blobstore.get_blob_key(file_name)
         self.response.out.write('<html><body>File has uploaded, please download the file at <a href="/serve/%s">here</a>' % blob_key )
     
