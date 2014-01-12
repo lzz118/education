@@ -2,6 +2,7 @@ from __future__ import with_statement
 import urllib
 import webapp2
 import csv
+import logging
 from StringIO import StringIO
 
 from google.appengine.ext import blobstore
@@ -21,7 +22,6 @@ class MainHandler(webapp2.RequestHandler):
         self.response.out.write(landing_page)
 
 class UploadHandler(webapp2.RequestHandler):
-    
         
     @staticmethod
     def crypt(plaintext):
@@ -82,7 +82,68 @@ class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
         blob_info = blobstore.BlobInfo.get(resource)
         self.send_blob(blob_info)
 
+class FileUtils:
+    
+    @staticmethod
+    def crypt(plaintext):
+        return plantext
+
+    @staticmethod
+    def save_file(data):
+        file_name = files.blobstore.create(mime_type='text/plain')
+        with files.open(file_name, 'a') as f:
+            writer = csv.writer(f , delimiter=',')
+            for row in csv.reader(StringIO(data), delimiter=','):
+                if len(row) > 1:
+                    row[1] = self.crypt(row[1])
+                writer.writerow(row)
+        files.finalize(file_name)
+        blob_key = files.blobstore.get_blob_key(file_name)
+        logging.get_logger("Utils").debug("A new file has been uploaded and saved with key %s" % blog_key)
+
+    @staticmethod
+    def delete_file(key=None):
+        if key:
+            pass
+        else:
+            # Delete all files
+            pass
+
+    @staticmethod
+    def append_file(key, data):
+        pass
+
+    @staticmethod
+    def fetch_file(key):
+        pass
+    
+    @staticmethod
+    def replace_file(key, newfile):
+        pass
+
+    @staticmethod
+    def update_meta_data(key, meta_info):
+        pass
+
+    @staticmethod
+    def get_meta_data(user, limit):
+        pass
+
+class FileManager(blobstore_handlers.BlobstoreDownloadHandler):
+
+    def get(self, key=None):
+        FileUtils.fetch_file(key)
+        pass
+
+    def post(self, key=None):
+        file_name = self.request.POST.get('name', 'filename')
+        has_header_row = self.request.POST.get('hasHeaderRow', True)
+        delimiter = self.request.POST.get('delimiter', ',')
+        file = self.request.POST.get('newFile').value
+
 app = webapp2.WSGIApplication([('/', MainHandler),
                                ('/upload', UploadHandler),
-                               ('/serve/([^/]+)?', ServeHandler)],
+                               ('/serve/([^/]+)?', ServeHandler),
+                               ('/api/file', FileManager),
+                               ('/api/file/([^/]+)?', FileManager)],
                               debug=True)
