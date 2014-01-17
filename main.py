@@ -62,9 +62,6 @@ class UploadHandler(webapp2.RequestHandler):
                     row[1] = self.crypt(row[1])
                 writer.writerow(row)
         files.finalize(file_name)
-        
-        blob_key = files.blobstore.get_blob_key(file_name)
-        self.response.out.write('<html><body>File has uploaded, please download the file at <a href="/serve/%s">here</a>' % blob_key )
         blobs = blobstore.BlobInfo.all()
         blob_links = [
                       '<a href="/serve/%s">File %s</a><br/>' % (blob.key(), index+1)
@@ -114,7 +111,6 @@ class FileUtils:
 
     @staticmethod
     def save_file(data, encryption_key, has_header_row, delimiter, **kwds):
-        logging.info("delimiter is %d [%s]" % (len(delimiter), delimiter))
         columns_for_encryption=kwds['columns_for_encryption']
         columns_info=kwds['columns_info']
         file_name = files.blobstore.create(mime_type='text/plain')
@@ -125,6 +121,7 @@ class FileUtils:
             
             if has_header_row:
                 header_row = next(reader)
+                # If there is a header line, then populate the column names
                 for idx, header in enumerate(header_row):
                     columns_info.append({'column_name':header, 'encrypted':True if idx in columns_for_encryption else False})
                 writer.writerow(header_row)
@@ -139,6 +136,7 @@ class FileUtils:
                         row[index] = FileUtils.crypt(row[index], encryption_key)
                 writer.writerow(row)
             
+            # If there is no header line, calculate the size of the longest row, then set the column names to be empty
             if longest_row_len and not columns_info and not has_header_row:
                 for idx in range(longest_row_len):
                     columns_info.append({'column_name':'', 'encrypted': True if idx in columns_for_encryption else False})
