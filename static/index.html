@@ -12,7 +12,9 @@
       function APITestController($scope, $resource){
         $scope.file_data = {"name":"New CSV file", 
                             "description": "Default description",
-                            "fileId": null};
+                            "columns_to_encrypt": "2",
+                            "fileId": null,
+                            "delimiter": ','}
         
         $scope.last_result = {};
         var File = $resource('/file/:fileId', {fileId:'@id'});
@@ -42,8 +44,12 @@
       <div> login </div>
       <div> logout </div><br>
       <div> Simple File Post for now since AJAX file uploads are more complex.
-        <form action="/upload" enctype="multipart/form-data" method="post"><input type="file" name="file"/>
-          File description: <input type="input" ng-model="file_data.description"><br> 
+        <form action="/api/file" enctype="multipart/form-data" method="post">
+          <input type="file" name="newFile"/>
+          File description: <input type="input" name="description" ng-model="file_data.description"><br> 
+          Columns To Encrypt: <input type="input" name="columns_to_encrypt" ng-model="file_data.columns_to_encrypt"><br> 
+          delimiter: <input type="input" name="delimiter" ng-model="file_data.delimiter"><br>   
+          hasHeaderRow: <input type="checkbox" name="hasHeaderRow" value="Yes" checked><br>   
           <input type="submit" />
         </form>
       </div><br>
