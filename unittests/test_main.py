@@ -84,11 +84,8 @@ class Test_CSV_Row_Encryption(unittest.TestCase):
     def test_index(self):
         app = TestApp(main.app)
         response = app.get('/')
-
-        # Let's check if the response is correct.
-        self.assertEqual(response.status_int, 200)
-        self.assertEqual(True, "AJAX Test GUI" in response.body)
-        self.assertEqual(0, len(response.html.find_all('li')))
+        # User needs to login before redirected to the home page.
+        self.assertEqual(response.status_int, 302)
     
     def test_crypt(self):
         key = RSA.importKey(PRIVATE_KEY)
