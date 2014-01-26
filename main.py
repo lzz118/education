@@ -4,8 +4,10 @@ import webapp2
 import csv
 import logging
 import json
+import os
 
 from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5
 from Crypto import Random
 from StringIO import StringIO
 from models import File, PublicKey
@@ -14,7 +16,7 @@ from functools import wraps
 from google.appengine.api import files
 from google.appengine.api import users
 from google.appengine.ext import blobstore
-from google.appengine.ext.webapp import blobstore_handlers
+from google.appengine.ext.webapp import blobstore_handlers, template
 from webapp2_extras.appengine.users import login_required, admin_required
 
 class MainHandler(webapp2.RequestHandler):
@@ -25,20 +27,25 @@ class MainHandler(webapp2.RequestHandler):
     def get(self):
         user = users.get_current_user()
         header = ""
+        is_admin = False
+        nick_name = ""
         if users.is_current_user_admin():
-            header = "You have logged in as admin. Go to <a href='/admin'>admin page</a><br/><a href=%s>logout</a>" % users.create_logout_url(self.request.uri)
+            user_url = users.create_logout_url(self.request.uri)
+            user_text = 'logout'
+            is_admin = True
+            nick_name = user.nickname()
         else:
-            header = "You have logged in as %s. <a href=%s>logout</a>" % \
-                     (user.nickname(), users.create_logout_url(self.request.uri))
-
-        landing_page = """
-        <html><body>
-          <h2>%s</h2>
-          <a href="/static/index.html">AJAX Test GUI</a><br>
-          <a href="/api/file">all files</a>
-        <body/><html/>
-        """ % header
-        self.response.out.write(landing_page)
+            user_url = users.create_logout_url(self.request.uri)
+            user_text = 'logout'
+            nick_name = user.nickname()
+        
+        template_values = {
+                            'is_admin' : is_admin,
+                            'user_url' : user_url,
+                            'user_text' : user_text,
+                            'nick_name' : nick_name,
+                          }
+        self.response.out.write(template.render('template/app_template.html', template_values))
 
 class AdminConsoleHandler(webapp2.RequestHandler):
     """
@@ -48,22 +55,22 @@ class AdminConsoleHandler(webapp2.RequestHandler):
         key_list = "<table border='1'><th>ID</th><th>Key Name</th><th>Key Description</th><th>Owner</th><th>Created</th><th>Default Key</th><th>Action</th>"
         publickeys = PublicKey.all().run(batch_size=1000)
         for seq, publickey in enumerate(publickeys):
-            key_list += "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><a href='/admin/edit_key?id=%s'>edit</a><br/><a href='/api/admin/delete_key?id=%s'>delete</a></td></tr>" % \
+            key_list += "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><a href='/admin/edit_key?id=%s'>edit</a><br/><a href='/api/public_key/delete_key?id=%s'>delete</a></td></tr>" % \
                         (seq+1, publickey.name, publickey.description, publickey.owner,
                         str(publickey.created), publickey.is_default_key, publickey.key().id(), publickey.key().id())
         key_list += "</table>"
         admin_landing_page = """
         <html><title> Admin Console Test Page</title><body>
             <h1> Upload a new default encryption key </h1>
-            <form action="/api/admin" enctype="multipart/form-data" method="post">
-                Please upload a key: <input type="file" name="default_public_key"><br>
+            <form action="/api/public_key" enctype="multipart/form-data" method="post">
+                Please upload a key: <input type="file" name="public_key_file"><br>
                 <input type="submit">
             </form>
             <br>
             <h1> Upload a new encryption key for user</h1>
-            <form action="/api/admin" enctype="multipart/form-data" method="post">
+            <form action="/api/public_key" enctype="multipart/form-data" method="post">
                 User email: <input type="text" name="email"><br>
-                Please upload a key: <input type="file" name="default_public_key"><br>
+                Please upload a key: <input type="file" name="public_key_file"><br>
             <input type="submit">
             </form>
             <br>
@@ -78,7 +85,7 @@ class AdminConsoleHandler(webapp2.RequestHandler):
         edit_encryption_key_form = """
                                    <html>
                                         <body>
-                                            <form action='/api/admin/edit_key'>
+                                            <form action='/api/public_key/edit_key'>
                                                 <textarea rows='10' cols='50' name='key_data'>%s</textarea>
                                                 <input type="hidden" name='id' value='%s'/>
                                                 <input type="submit" value='save change'/>
@@ -105,28 +112,8 @@ class UploadHandler(webapp2.RequestHandler):
         
     @staticmethod
     def crypt(plaintext):
-        # Use a fixed private key here to get a deterministic result for testing
-        key = RSA.importKey('''-----BEGIN RSA PRIVATE KEY-----
-        MIICXAIBAAKBgQCIJAdEmiawxYaf/ZTv/679mwxiwJPhHsKPIfoW8w0IRy0oZhkS
-        zp+M+UGIiKL3FDJjMkVVl8mpxJ8qMwkTkRte8+1GoxPRANmuvEsAIVpfVctJkIqJ
-        +FTcH8J28hPugIJFrWD4tWcPslr75s8fx0VJjcOkdV5gZAea2JlXKaXEvQIDAQAB
-        AoGAOkVJgxiD5Pe2xrYQUKVcrhn2NDJ/WUUEO6VsWPRRKLDmaDtDEiS0b++kGB97
-        uUvAwWqb+KXOYEbTZYmQofpi/yKSzDIgJy04u2LSmyAvlWrJzj3GE6NbHPv/ctlY
-        YUD51TFn3cc97TYCH+fW7HPxpbrRDr9sHvIC7f3vV5HuFJUCQQC6n23oUH3xQeIb
-        oNFLQ/GAIQULYQOEYSJv7Vy3nzkkNAKQxDP9/OcYgsGcK3VxzHVrjQVOjFX/kM1L
-        d+OtqjtbAkEAusBPWAqUT2CGenG11Vwz5dy1RP4k+xYjI7RLh7dsxGrAshl8YYVx
-        ILMvYtNNOFlo9cVCc7zRmUKu175j7kOzxwJBALX8pKwoWjh7W+g/UfnInueoy4eG
-        KmzcYD2vxXuWvJ1OTrYnbuAe0Kj5UZ5eTuATVunzkhpABdj7twcCObdvywMCQEHH
-        cysjrtG2widm3hFlBLK2ZvMCQaxfQ8lTvDb1mM4me/E/oNwI0Kwf8VTx8IUkmR/Y
-        d2uk2n8NSeCcIz7NggkCQFylnC7S7hlgZyUvaIpBsGzzdr8cyrTol4T1G9n7G2sE
-        Q1pc7/sXaYlMBZxKrCMWjAol9AZ2Cfpj6x5A3XnTm98=
-        -----END RSA PRIVATE KEY-----''')
-    
-        enc_data = key.encrypt(plaintext, 32)
-        
-        # encode the byte data into ASCII data so that it could be printed out in the browser
-        return enc_data[0].encode('base64')
-    
+        return plaintext
+
     def post(self):
         rows=self.request.POST.get('file').value
         file_name = files.blobstore.create(mime_type='text/plain')
@@ -165,9 +152,13 @@ class FileUtils:
     def crypt(plaintext, encryption_key):
         if not encryption_key:        
             return plaintext 
-        enc_data = RSA.importKey(encryption_key).encrypt(plaintext, 32)
-        # encode the byte data into ASCII data so that it could be printed out in the browser
-        return enc_data[0].encode('base64')
+        try:
+            enc_data = PKCS1_v1_5.new(RSA.importKey(encryption_key)).encrypt(plaintext)
+            # encode the byte data into ASCII data so that it could be printed out in the browser
+            return enc_data.encode('base64')
+        except Exception as ex:
+            logging.error("Exception thrown during encryption %s" % str(ex))
+            return None
     
     @staticmethod
     def get_publickey(user):
@@ -206,7 +197,7 @@ class FileUtils:
         publickey.put()
         logging.info("Added a new keys with key name [%s] and key description [%s] for %s. It is a %s " % 
                      (key_name, key_description, user.nickname(), "default encryption key" if is_default_key else "user encryption key"))
-        return True
+        return [True, str(publickey.key().id())]
 
     @staticmethod
     def save_csv_file(data, encryption_key, has_header_row, delimiter, **kwds):
@@ -259,7 +250,7 @@ class FileUtils:
 
     @staticmethod
     def get_blob_info(blob_key):
-        if key:
+        if blob_key:
             return blobstore.BlobInfo.get(blob_key)
         return None
 
@@ -280,31 +271,44 @@ class AdminApiHandler(webapp2.RequestHandler):
     @admin_required
     def get(self, action=None):
         """
-            Serve /api/admin GET method for testing the admin apis.
+            Serve /api/public_key GET method for testing the public key apis.
         """
         if action:
+            logging.info("Getting the action in the GET method")
             if action == "delete_key":
                 self.delete()
             elif action == "edit_key":
                 self.put()
-            self.redirect("/admin")
         else:
+            """
+                Serves /api/public_key GET: If a key id is provided, return the information for the key 
+                associated with the id, otherwise return all keys in the datastore.
+            """
             response = []
-            publickeys = PublicKey.all().run(batch_size=1000)
+            publickeys = []
+            id = self.request.get('id', None)
+            
+            if id:
+                publickeys = [PublicKey.get_by_id(long(id))]
+            else:
+                publickeys = PublicKey.all().run(batch_size=1000)
+            
             for seq, publickey in enumerate(publickeys):
-                response.append({ 'key_name'  : publickey.name, 'key_description' : publickey.description, 
+                response.append({ 'seq': seq,  'key_name'  : publickey.name, 'key_description' : publickey.description, 
                                     'key_owner' : str(publickey.owner.email()), 'created' : str(publickey.created), 
                                     'is_default_key' : publickey.is_default_key, 'key_id' : publickey.key().id()})
             self.response.out.write(json.dumps(response))
 
     def post(self):
         """
-            Serve /api/admin POST method. It supports the uploading of encryption keys.
+            Serve /api/public_key POST method. It supports the uploading of encryption keys.
         """
         user = users.get_current_user()
         if not user or not users.is_current_user_admin():
             self.abort(400)
-        key_data = self.request.POST.get('default_public_key').value
+        if not len(self.request.get('public_key_file')):
+            self.abort(400)
+        key_data = self.request.POST.get('public_key_file').value
         email = self.request.POST.get('email', '')
         key_name = "default encryption key"
         key_description = "This is the default encryption key used when no user encryption key found."
@@ -314,12 +318,12 @@ class AdminApiHandler(webapp2.RequestHandler):
             user = users.User(email)
             key_name = "encryption key for %s" % user.nickname()
             key_description = "The encryption key used for encrypting data uploaded by %s" % user.nickname()
-        is_success = FileUtils.save_publickey(key_data, key_name, key_description, is_default_key, user)                
-        self.response.write({'status' : 'success' if is_success else 'failure'})
+        [is_success, key_id] = FileUtils.save_publickey(key_data, key_name, key_description, is_default_key, user)                
+        self.response.write({'status' : 'success' if is_success else 'failure', 'key_id': key_id})
     
     def delete(self):
         """
-            Serves /api/admin DELETE method.  It supports the deletion of the encryption keys by key id.
+            Serves /api/public_key DELETE method.  It supports the deletion of the encryption keys by key id.
         """
         id = self.request.get('id', None)
         if id:
@@ -334,7 +338,7 @@ class AdminApiHandler(webapp2.RequestHandler):
 
     def put(self):
         """
-            Serves /api/admin PUT method. It supports the changing of the encryption key value by key id.
+            Serves /api/public PUT method. It supports the changing of the encryption key value by key id.
         """
         id = self.request.get('id', None)
         key_data = self.request.get('key_data', None)
@@ -361,14 +365,17 @@ class FileApiHandler(webapp2.RequestHandler):
     @login_required
     def get(self, parameter=None):
         if parameter:
-            decoded_parameter = str(urllib.unquote(parameter))
-            if decoded_parameter.endswith("csv"):
-                # Serves /api/file/<key>.csv : GET
+            blob_key = str(urllib.unquote(parameter))
+            if len(blob_key) > 0:
+                # Serves /api/file/<key> : GET
                 # returns the file content if there is a match
-                blob_key = decoded_parameter.split(".")[0]
-                blob_info =FileUtils.get_blob_info(blob_key)
-                if blob_info:
-                    self.send_blob(blob_info)
+                blob_info = blobstore.BlobInfo.get(blob_key)
+                blob_content = blobstore.BlobReader(blob_info.key())
+                
+                if blob_content:
+                    response = [{ 'file_type' : 'csv', 'content' : blob_content.read() }]
+                    logging.info("Returning %s" % json.dumps(response))
+                    self.response.write(json.dumps(response))
                 else:
                     self.abort(404)
             else:
@@ -377,22 +384,13 @@ class FileApiHandler(webapp2.RequestHandler):
             # Serves /api/file : GET
             # returns 50 most file descriptions of the current logged in user, sorted by last modification date.
             user = users.get_current_user()
-            self.response.write('<html><body>Hello %s! [<a href=%s>sign out</a>]' % \
-                (user.nickname(), users.create_logout_url(self.request.uri)
-                ))
-            self.response.write("<h1>File List</h1><ol>")
-            files = File.all().order("-last_modified").filter('owner =', user).fetch(50)
+            offset = self.request.get('offset', '50')
+            files = File.all().order("-last_modified").filter('owner =', user).fetch(int(offset))
+            response = []
             for file in files:
-                self.response.write('''
-                <li> <a href='/serve/%s'>Open file</a></li> 
-                name:[%s] <br/> 
-                description:[%s] <br/>
-                has_header_row:[%s] <br/>
-                delimiter:[%s] <br/>
-                encryption_meta[%s]<br/>
-                last_modified[%s]<br/><br/> 
-                ''' % (file.file_key, file.name, file.description, file.has_header_row, file.delimiter, file.encryption_meta, file.last_modified) )  
-            self.response.write("</ol></body></html>")
+                response.append({'name' : file.name, 'key' : file.file_key, 'last_modified' : str(file.last_modified),
+                        'hasHeaderRow' : file.has_header_row, 'delimiter' : file.delimiter, 'encryption_meta' : file.encryption_meta})
+            self.response.write(json.dumps(response))
 
     def post(self):
         # Serves /api/file : POST 
@@ -435,8 +433,8 @@ app = webapp2.WSGIApplication([('/', MainHandler),
                                ('/admin/([^/]+)?', AdminConsoleHandler),
                                ('/upload', UploadHandler),
                                ('/serve/([^/]+)?', ServeHandler),
-                               ('/api/admin', AdminApiHandler),
-                               ('/api/admin/([^/]+)?', AdminApiHandler),
+                               ('/api/public_key', AdminApiHandler),
+                               ('/api/public_key/([^/]+)?', AdminApiHandler),
                                ('/api/file', FileApiHandler),
                                ('/api/file/([^/]+)?', FileApiHandler)],
                               debug=True)

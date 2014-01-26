@@ -1,0 +1,158 @@
+<!doctype html>
+<html ng-app="myApp">
+  <header>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.1/angular.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.1/angular-resource.min.js"></script>
+    <script src="static/js/jsencrypt.min.js"></script> 
+    <script language="javascript" type="text/javascript">
+      //You need to add myApp to a module and provide access to any needed services.
+      angular.module('myApp', ['ngResource']);
+      //Add a controller that will share the same "scope" as some HTML element
+      function APITestController($scope, $resource){
+        $scope.file_data = {"name":"New CSV file", 
+                            "description": "Default description",
+                            "columns_to_encrypt": "2",
+                            "fileId": null,
+                            "delimiter": ','}
+        
+        $scope.last_result = '';
+        var File = $resource('/api/file/:fileid', {fileid:'@id'}, 
+                             {'get': {method : 'GET', params:{'offset':50}, isArray:true}})
+          
+        // posting without and id should result in creating an object.
+        $scope.fetch_file = function(id){
+          var files = File.get({fileid:id}, function() {
+                if (id) {
+                    // Display the file content
+                    $scope.last_result = (files[0]).content;
+                } else {
+                    // Display meta files for a list of files
+                    $scope.last_result = angular.toJson(files);
+                }
+            });
+        }
+
+        $scope.create_edit_file = function(id){
+          var file = File.save({fileId:id},$scope.file_data, function() {
+                 $scope.last_result = file;
+            });
+        }
+        
+        //Add another variable to the $scope here.
+        $scope.encrypted_columns = ''
+        $scope.delimiter = ','
+        $scope.private_key = "-----BEGIN RSA PRIVATE KEY-----\n" +
+            "MIICXQIBAAKBgQDVd/gb2ORdLI7nTRHJR8C5EHs4RkRBcQuQdHkZ6eq0xnV2f0hk\n" +
+            "WC8h0mYH/bmelb5ribwulMwzFkuktXoufqzoft6Q6jLQRnkNJGRP6yA4bXqXfKYj\n" +
+            "1yeMusIPyIb3CTJT/gfZ40oli6szwu4DoFs66IZpJLv4qxU9hqu6NtJ+8QIDAQAB\n" +
+            "AoGADbnXFENP+8W/spO8Dws0EzJCGg46mVKhgbpbhxUJaHJSXzoz92/MKAqVUPI5\n" +
+            "mz7ZraR/mycqMia+2mpo3tB6YaKiOpjf9J6j+VGGO5sfRY/5VNGVEQ+JLiV0pUmM\n" +
+            "doq8n2ZhKdSd5hZ4ulb4MFygzV4bmH29aIMvogMqx2Gkp3kCQQDx0UvBoNByr5hO\n" +
+            "Rl0WmDiDMdWa9IkKD+EkUItR1XjpsfEQcwXet/3QlAqYf+FE/LBcnA79NdBGxoyJ\n" +
+            "XS+O/p4rAkEA4f0JMSnIgjl7Tm3TpNmbHb7tsAHggWIrPstCuHCbNclmROfMvcDE\n" +
+            "r560i1rbOtuvq5F/3BQs+QOnOIz1jLslUwJAbyEGNZfX87yqu94uTYHrBq/SQIH8\n" +
+            "sHkXuH6jaBo4lP1HkY2qtu3LYR2HuQmb1v5hdk3pvYgLjVsVntMKVibBPQJBAKd2\n" +
+            "Dj20LLTzS4BOuirKZbuhJBjtCyRVTp51mLd8Gke9Ol+NNZbXJejNvhQV+6ad7ItC\n" +
+            "gnDfMoRERMIPElZ6x6kCQQCP45DVojZduLRuhJtzBkQXJ4pCsGC8mrHXF3M+hJV+\n" +
+            "+LAYJbXrQa4mre59wR0skgb6CwGg1siMrDzJgu3lmBB0\n" +
+            "-----END RSA PRIVATE KEY-----";
+        $scope.decrypt = function() {
+          if ($scope.encrypted_columns  == '')
+              return;
+
+          var delimiter = $scope.delimiter;
+          var encrypted_csv = $scope.last_result;
+          var encrypted_columns = $scope.encrypted_columns.split(',');
+          var all_rows = encrypted_csv.split(/\r\n/);
+          var decrypt = new JSEncrypt();
+          decrypt.setPrivateKey($scope.private_key);
+          
+          var output = '';
+          for (var i=0; i<all_rows.length; i++) {
+            var items = (all_rows[i]).split(delimiter);
+            for (var j=0; j<items.length; j++) {
+                for (var k=0; k<encrypted_columns.length; k++) {
+                    if ((j + 1) == parseInt(encrypted_columns[k])) {
+                        items[j] = decrypt.decrypt(items[j]);
+                    }
+                }
+            }
+            output += items.join(delimiter);
+            output += "\r\n";
+          }
+          $scope.last_result = output;
+        }
+      }
+
+    </script>
+  </header>
+  
+  <body ng-controller="APITestController">
+    This is a single page angular app used to test the API.
+      <div><h1>{{ nick_name }} <a href={{ user_url }}>{{ user_text }}</a></h1></div> {% if is_admin %}
+        <a href="/admin/">Admin Console</a>
+      {% endif %}</div>
+      <div> 
+        <h2>1. Simple File Post for now since AJAX file uploads are more complex.</h2>
+        <form action="/api/file" enctype="multipart/form-data" method="post">
+          <input type="file" name="newFile"/>
+          File description: <input type="input" name="description" ng-model="file_data.description"><br> 
+          Columns To Encrypt: <input type="input" name="columns_to_encrypt" ng-model="file_data.columns_to_encrypt"><br> 
+          delimiter: <input type="input" name="delimiter" ng-model="file_data.delimiter"><br>   
+          hasHeaderRow: <input type="checkbox" name="hasHeaderRow" value="Yes" checked><br>   
+          <input type="submit" />
+        </form>
+     </div><br><br>
+        <div style="float:right"> 
+            <label for="last_result"> Last Result : </label>
+            <textarea id="last_result" rows="15" cols="65" ng-model="last_result">test</textarea> 
+        </div>
+
+      <div> 
+        <h2>2. Fetch all files uploaded for the current user </h2>
+        <input type="submit" value="Get files" ng-click="fetch_file();"><br><br>
+        
+        <h2>3. Get file by file key </h2>
+        File key: <input type="input" ng-model="file_data.fileId">
+        <input type="submit" value="Get file {{file_data.fileId}}" ng-click="fetch_file(file_data.fileId);">
+        
+        <h2>4. Edit file (to be implemented)</h2>
+        File name: <input type="input" ng-model="file_data.name">
+        File description: <input type="input" ng-model="file_data.description"><br>   
+        <input type="submit" value="Edit file data {{file_data.fileId}}" ng-click="create_edit_file(file_data.fileId);">
+        
+        <h2>5. Decrypt file </h2>
+        <input type="submit" value="Decrypt" ng-click="decrypt();">
+         Encrypted columns: <input type="input" name="columns_to_encrypt" ng-model="encrypted_columns"><br> 
+         Delimiter: <input type="input" name="Delimiter" ng-model="delimiter"></input><br> 
+        <label for="private_key"> Private Key : </label>
+        <textarea id="private_key" name="private_key" rows="5" cols="65" ng-model="private_key">dummy key</textarea> 
+        
+        <!-- <input type="submit" value="Create file (not yet supported)" ng-click="create_edit_file();"> -->
+      </div>
+
+<!--
+Add basic Google login support to associate files with uploading user
+api/file:  POST with file as attachment
+Provide hasHeaderRow (default=true) as a parameter. 
+api/file/1234: POST edit the meta data for an existing file and replace the file if there is an attachment. 
+api/file: GET list the last 50 uploaded files
+api/file/1234: GET the file with passed in id
+api/file/1234: DELETE the file with passed in id
+api/download/1234: download file data. url option to view data as text. 
+api/append_files: POST create a new file with appended contents of files. 
+api/condense_file/1234: POST remove duplicates in file based on options
+api/decrypt_and_download/1234: pass in private key and download unencrypted data. This will be mainly used for testing that all encryption and decryption is working properly. 
+api/scheduled_upload: POST
+api/scheduled_upload/1234: POST
+api/scheduled_upload: GET
+api/scheduled_upload/1234: GET
+api/scheduled_upload/1234: DELETE
+api/scheduled_upload_association:
+create, edit, list, fetch, delete
+api/public_key
+create, edit, list, fetch, delete
+-->
+  </body>
+
+</html>
