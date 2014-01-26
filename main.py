@@ -4,7 +4,6 @@ import webapp2
 import csv
 import logging
 import json
-import os
 
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5
@@ -112,7 +111,27 @@ class UploadHandler(webapp2.RequestHandler):
         
     @staticmethod
     def crypt(plaintext):
-        return plaintext
+        # Use a fixed private key here to get a deterministic result for testing
+        key = RSA.importKey('''-----BEGIN RSA PRIVATE KEY-----
+        MIICXAIBAAKBgQCIJAdEmiawxYaf/ZTv/679mwxiwJPhHsKPIfoW8w0IRy0oZhkS
+        zp+M+UGIiKL3FDJjMkVVl8mpxJ8qMwkTkRte8+1GoxPRANmuvEsAIVpfVctJkIqJ
+        +FTcH8J28hPugIJFrWD4tWcPslr75s8fx0VJjcOkdV5gZAea2JlXKaXEvQIDAQAB
+        AoGAOkVJgxiD5Pe2xrYQUKVcrhn2NDJ/WUUEO6VsWPRRKLDmaDtDEiS0b++kGB97
+        uUvAwWqb+KXOYEbTZYmQofpi/yKSzDIgJy04u2LSmyAvlWrJzj3GE6NbHPv/ctlY
+        YUD51TFn3cc97TYCH+fW7HPxpbrRDr9sHvIC7f3vV5HuFJUCQQC6n23oUH3xQeIb
+        oNFLQ/GAIQULYQOEYSJv7Vy3nzkkNAKQxDP9/OcYgsGcK3VxzHVrjQVOjFX/kM1L
+        d+OtqjtbAkEAusBPWAqUT2CGenG11Vwz5dy1RP4k+xYjI7RLh7dsxGrAshl8YYVx
+        ILMvYtNNOFlo9cVCc7zRmUKu175j7kOzxwJBALX8pKwoWjh7W+g/UfnInueoy4eG
+        KmzcYD2vxXuWvJ1OTrYnbuAe0Kj5UZ5eTuATVunzkhpABdj7twcCObdvywMCQEHH
+        cysjrtG2widm3hFlBLK2ZvMCQaxfQ8lTvDb1mM4me/E/oNwI0Kwf8VTx8IUkmR/Y
+        d2uk2n8NSeCcIz7NggkCQFylnC7S7hlgZyUvaIpBsGzzdr8cyrTol4T1G9n7G2sE
+        Q1pc7/sXaYlMBZxKrCMWjAol9AZ2Cfpj6x5A3XnTm98=
+        -----END RSA PRIVATE KEY-----''')
+    
+        enc_data = key.encrypt(plaintext, 32)
+        
+        # encode the byte data into ASCII data so that it could be printed out in the browser
+        return enc_data[0].encode('base64')
 
     def post(self):
         rows=self.request.POST.get('file').value
@@ -389,7 +408,7 @@ class FileApiHandler(webapp2.RequestHandler):
             response = []
             for file in files:
                 response.append({'name' : file.name, 'key' : file.file_key, 'last_modified' : str(file.last_modified),
-                        'hasHeaderRow' : file.has_header_row, 'delimiter' : file.delimiter, 'encryption_meta' : file.encryption_meta})
+                        'hasHeaderRow' : file.has_header_row, 'delimiter' : file.delimiter, 'content_type' : file.content_type, 'encryption_meta' : file.encryption_meta})
             self.response.write(json.dumps(response))
 
     def post(self):
@@ -422,7 +441,11 @@ class FileApiHandler(webapp2.RequestHandler):
         new_file.file_key = str(blob_key)
         new_file.delimiter = delimiter
         new_file.encryption_meta = {"encryption_key_info": encryption_key_info, "columns_info": columns_info }
-        new_file.owner = user 
+        new_file.owner = user
+        if file_name.endswith('csv'):
+            new_file.content_type = "text/csv"
+        else:
+            new_file.content_type = "text/plain"
         new_file.put()
 
         response = {'name': file_name, 'key': str(blob_key), 'lastUpdate': str(new_file.last_modified)}        
