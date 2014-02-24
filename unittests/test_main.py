@@ -4,26 +4,19 @@ Created on Dec 1, 2013
 @author: Chris
 '''
 import csv
+import unittest
 
-from google.appengine.ext import db
-from google.appengine.api import memcache
-from google.appengine.api import urlfetch
-from google.appengine.api import users
+import webapp2
 from google.appengine.ext import testbed
 from google.appengine.api.blobstore import blobstore_stub, file_blob_storage
 from google.appengine.api.files import file_service_stub
-
 from google.appengine.ext import blobstore
-
-from django.utils import simplejson as json
-from time import sleep
 from webtest import TestApp
 from Crypto.PublicKey import RSA
 
-import webapp2
-import unittest
-import logging
 import main
+from education.controllers import UploadHandler
+
 
 PRIVATE_KEY = '''-----BEGIN RSA PRIVATE KEY-----
 MIICXAIBAAKBgQCIJAdEmiawxYaf/ZTv/679mwxiwJPhHsKPIfoW8w0IRy0oZhkS
@@ -47,16 +40,20 @@ oxPRANmuvEsAIVpfVctJkIqJ+FTcH8J28hPugIJFrWD4tWcPslr75s8fx0VJjcOk
 dV5gZAea2JlXKaXEvQIDAQAB
 -----END PUBLIC KEY-----'''
 
+
 class TestbedWithFiles(testbed.Testbed):
     """See http://stackoverflow.com/questions/8130063/test-function-with-google-app-engine-files-api"""
 
     def init_blobstore_stub(self):
-        blob_storage = file_blob_storage.FileBlobStorage('/tmp/testbed.blobstore',
-                                                testbed.DEFAULT_APP_ID)
+        blob_storage = file_blob_storage.FileBlobStorage(
+            '/tmp/testbed.blobstore',
+            testbed.DEFAULT_APP_ID
+        )
         blob_stub = blobstore_stub.BlobstoreServiceStub(blob_storage)
         file_stub = file_service_stub.FileServiceStub(blob_storage)
         self._register_stub('blobstore', blob_stub)
         self._register_stub('file', file_stub)
+
 
 class Test_CSV_Row_Encryption(unittest.TestCase):
 
@@ -91,7 +88,7 @@ class Test_CSV_Row_Encryption(unittest.TestCase):
     def test_crypt(self):
         key = RSA.importKey(PRIVATE_KEY)
         for username in ['chris', 'bob', 'mary-joe add']:
-            enc_data = main.UploadHandler.crypt(username)
+            enc_data = UploadHandler.crypt(username)
             decrypted = key.decrypt(enc_data.decode('base64'))
             self.assertEqual(username, decrypted)
 

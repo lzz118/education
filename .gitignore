@@ -2,3 +2,4 @@
 *.*~
 pyenv/*
 lib/*.dist-info/*
+.coverage
