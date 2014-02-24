@@ -1,0 +1,9 @@
+[submodule "content-delivery"]
+	path = content-delivery
+	url = https://github.com/ChrisBoesch/angular-education.git
+[submodule "scorecard"]
+	path = scorecard
+	url = https://github.com/ChrisBoesch/angular-scorecard.git
+[submodule "portfolio"]
+	path = portfolio
+	url = https://github.com/ChrisBoesch/angular-portfolio.git
