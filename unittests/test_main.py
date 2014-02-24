@@ -73,6 +73,7 @@ class Test_CSV_Row_Encryption(unittest.TestCase):
         self.testbed.init_mail_stub()
         self.testbed.init_blobstore_stub()
         self.testbed.init_taskqueue_stub(root_path="../.") #2.7
+        self.testbed.init_user_stub()
         
         self.request = webapp2.Request.blank('')
         self.request.META = {}

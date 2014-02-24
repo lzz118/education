@@ -1,4 +1,4 @@
-ROOT=`pwd`
+ROOT=$(pwd)
 
 PYENV=./pyenv
 BIN=${PYENV}/bin
@@ -42,4 +42,4 @@ setup-dev:
 	@echo "Make sure you have google app engine installed in ${GAE}"
 
 test:
-	cd  ${SRC}; PYTHONPATH=${SRC} ${NOSE} --with-gae --without-sandbox -w unittests --gae-application=${SRC} --with-coverage --cover-package=main,models
+	${PYTHON} runtests.py --cover-package=education,main

@@ -45,7 +45,7 @@ Note: that libraries only needed for testing should be installed normally
 ## Tests
 
 ```
-PYTHONPATH=./ nosetests --with-gae --without-sandbox -w unittests --gae-application=./ --with-coverage --cover-package=main,models
+python runtests.py
 ```
 
 or
