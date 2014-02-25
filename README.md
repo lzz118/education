@@ -5,13 +5,41 @@
 Requirements:
 - python2.7
 - virtualenv
-- google app engine install in /usr/local/google_appengine.
+- git
 
-You can then setup you virtual environement:
+Install/update google app engine
 ```
+cd ~
+rm -rf .google_appengine
+wget http://googleappengine.googlecode.com/files/google_appengine_1.8.9.zip
+unzip google_appengine_1.8.9.zip
+mv google_appengine .google_appengine
+rm google_appengine_1.8.9.zip
+```
+
+Add google appengine to your path (skip it in nitrous.io):
+```
+echo "export PATH=$PATH:$HOME/.google_appengine" >> ~/.bashrc
+```
+
+Define the GAEPATH variable (it will be used by the test runner):
+```
+echo "export GAEPATH=$HOME/.google_appengine" >> ~/.bashrc
+source ~/.bashrc
+```
+
+
+You can then clone this project and setup your virtual environement:
+```
+git clone git@github.com:SingaporeClouds/education.git
+cd education
+git submodule update --init 
+git submodule foreach git stash
+git submodule foreach git pull origin master
 virtualenv pyenv
+source pyenv/bin/activate
 pip install -r dev-requirements.txt
-echo /usr/local/google_appengine >> pyenv/lib/python2.7/site-packages/gae.pth
+echo $GAEPATH >> pyenv/lib/python2.7/site-packages/gae.pth
 echo `pwd`/lib >> pyenv/lib/python2.7/site-packages/gae.pth
 echo "import dev_appserver; dev_appserver.fix_sys_path()" >> pyenv/lib/python2.7/site-packages/gae.pth
 ```
@@ -19,7 +47,11 @@ echo "import dev_appserver; dev_appserver.fix_sys_path()" >> pyenv/lib/python2.7
 or
 
 ```
+git clone git@github.com:SingaporeClouds/education.git
+cd education
+make submodules
 make setup-dev
+source pyenv/bin/activate
 ```
 
 Remember to activate the virtual environement when working on the project:
