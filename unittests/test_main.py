@@ -15,7 +15,7 @@ from webtest import TestApp
 from Crypto.PublicKey import RSA
 
 import main
-from education.controllers import UploadHandler
+from api.controllers import UploadHandler
 
 
 PRIVATE_KEY = '''-----BEGIN RSA PRIVATE KEY-----

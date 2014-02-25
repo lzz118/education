@@ -5,8 +5,8 @@ import webapp2
 from google.appengine.api import users
 from webapp2_extras.appengine.users import admin_required
 
-from education.utils import FileUtils
-from education.delivery.models import PublicKey
+from api.utils import FileUtils
+from api.delivery.models import PublicKey
 
 
 class AdminConsoleHandler(webapp2.RequestHandler):
