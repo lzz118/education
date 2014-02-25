@@ -13,12 +13,10 @@ before_script:
 
 # command to install dependencies
 install:
-  - curl -O http://googleappengine.googlecode.com/files/google_appengine_1.8.1.zip && unzip -q google_appengine_1.8.1.zip
-  - pip install webtest
-  - pip install pycrypto
-  - pip install pyyaml
-  - pip install NoseGAE
-  - pip install coverage
+  - curl -O http://googleappengine.googlecode.com/files/google_appengine_1.8.9.zip && unzip -q google_appengine_1.8.9.zip
+  - pip install -r dev-requirements.txt
+  - pip install -r requirements.txt
+
 # command to run tests
 #script:  python unittests/test_main.py
-script: nosetests --with-gae --without-sandbox --with-coverage --cover-package=main,models
+script: "./runtests.py --gae-lib-root=./google_appengine --cover-package=education,main"
