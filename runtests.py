@@ -2,7 +2,7 @@
 #
 # Test runner for Travis
 # 
-
+import os
 import sys
 import argparse
 import unittest
@@ -26,7 +26,7 @@ def get_args_parser():
     )
     parser.add_argument(
         '--gae-lib-root', '-l',
-        default='/usr/local/google_appengine',
+        default=os.getenv('GAEPATH', '/usr/local/google_appengine'),
         help='directory where to find Google App Engine SDK '
             '(default to "/usr/local/google_appengine")'
     )
