@@ -101,6 +101,10 @@ class UploadHandler(webapp2.RequestHandler):
                     row[1] = self.crypt(row[1])
                 writer.writerow(row)
         files.finalize(file_name)
+        # TODO: with high replication, the newly created file will not
+        # show in the list.
+        #
+        # It show redirect to a page listing the files instead
         blobs = blobstore.BlobInfo.all()
         blob_links = [
             '<a href="/serve/%s">File %s</a><br/>' % (blob.key(), index+1)

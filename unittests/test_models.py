@@ -12,17 +12,17 @@ class Test_Models(TestCase):
     def test_file(self):
         f = models.File()
         f.put()
-        self.assertEqual(1,models.File.all().count())
+        self.assertTrue(models.File.get(f.key()))
 
     def test_publickey(self):
         pk = models.PublicKey()
         pk.put()
-        self.assertEqual(1,models.PublicKey.all().count())
+        self.assertTrue(models.PublicKey.get(pk.key()))
 
     def test_ScheduledUpload(self):
         su = models.ScheduledUpload()
         su.put()
-        self.assertEqual(1,models.ScheduledUpload.all().count())
+        self.assertTrue(models.ScheduledUpload.get(su.key()))
 
     def test_ScheduledUploadFileAssociation(self):
         f = models.File()
@@ -30,4 +30,4 @@ class Test_Models(TestCase):
         
         sua = models.ScheduledUploadFileAssociation(file=f)
         sua.put()
-        self.assertEqual(1,models.ScheduledUploadFileAssociation.all().count())
+        self.assertTrue(models.ScheduledUploadFileAssociation.get(sua.key()))
