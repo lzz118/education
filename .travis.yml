@@ -19,4 +19,4 @@ install:
 
 # command to run tests
 #script:  python unittests/test_main.py
-script: "./runtests.py --gae-lib-root=./google_appengine --cover-package=education,main"
+script: "./runtests.py --gae-lib-root=./google_appengine --with-cover --cover-package=education"

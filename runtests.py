@@ -31,6 +31,10 @@ def get_args_parser():
             '(default to "/usr/local/google_appengine")'
     )
     parser.add_argument(
+        '--with-cover', '-c',
+        default=False, action='store_true',
+        help='should run coverage.')
+    parser.add_argument(
         '--cover-package', '-p',
         default='education',
         help='list of package to mesure coverage for.'
@@ -60,7 +64,26 @@ def setup_gae(gae_lib_root):
         dev_appserver.fix_sys_path()
 
 
-def main(gae_lib_root, start_dir, source):
+def _run_test(suite):
+    return unittest.TextTestRunner(verbosity=2, buffer=True).run(suite)
+
+def _run_test_with_coverage(suite, source):
+    cov = coverage.coverage(source=source)
+    cov.start()
+    
+    results = unittest.TextTestRunner(verbosity=2, buffer=True).run(suite)
+    cov.stop()
+    cov.save()
+
+    if results.wasSuccessful():
+        print ""
+        print "Coverage:"
+        cov.report()
+
+    return results
+
+
+def main(gae_lib_root, start_dir, with_coverage, source):
     """Try to load Google App Engine SDK and then to run any tests found with 
     unittest discovery feature.
     
@@ -70,23 +93,21 @@ def main(gae_lib_root, start_dir, source):
     setup_gae(gae_lib_root)
     suite = unittest.loader.TestLoader().discover(start_dir)
     
-    cov = coverage.coverage(source=source)
-    cov.start()
-    
-    results = unittest.TextTestRunner(verbosity=2, buffer=True).run(suite)
-    cov.stop()
-    cov.save()
+    if with_coverage:
+        results = _run_test_with_coverage(suite, source)
+    else:
+        results = _run_test(suite)
 
     if not results.wasSuccessful():
         sys.exit(1)
-
-    print ""
-    print "Coverage:"
-
-    cov.report()
 
 
 if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
-    main(args.gae_lib_root, args.start_dir, args.cover_package.split(','))
+    main(
+        args.gae_lib_root,
+        args.start_dir,
+        args.with_cover,
+        args.cover_package.split(',')
+    )
