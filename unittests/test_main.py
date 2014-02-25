@@ -4,18 +4,15 @@ Created on Dec 1, 2013
 @author: Chris
 '''
 import csv
-import unittest
 
 import webapp2
-from google.appengine.ext import testbed
-from google.appengine.api.blobstore import blobstore_stub, file_blob_storage
-from google.appengine.api.files import file_service_stub
 from google.appengine.ext import blobstore
 from webtest import TestApp
 from Crypto.PublicKey import RSA
 
 import main
 from api.controllers import UploadHandler
+from unittests.utils import TestCase
 
 
 PRIVATE_KEY = '''-----BEGIN RSA PRIVATE KEY-----
@@ -41,36 +38,11 @@ dV5gZAea2JlXKaXEvQIDAQAB
 -----END PUBLIC KEY-----'''
 
 
-class TestbedWithFiles(testbed.Testbed):
-    """See http://stackoverflow.com/questions/8130063/test-function-with-google-app-engine-files-api"""
 
-    def init_blobstore_stub(self):
-        blob_storage = file_blob_storage.FileBlobStorage(
-            '/tmp/testbed.blobstore',
-            testbed.DEFAULT_APP_ID
-        )
-        blob_stub = blobstore_stub.BlobstoreServiceStub(blob_storage)
-        file_stub = file_service_stub.FileServiceStub(blob_storage)
-        self._register_stub('blobstore', blob_stub)
-        self._register_stub('file', file_stub)
-
-
-class Test_CSV_Row_Encryption(unittest.TestCase):
+class Test_CSV_Row_Encryption(TestCase):
 
     def setUp(self):
-        self.testbed = TestbedWithFiles()
-        
-        #self.testbed = testbed.Testbed()
-        # Then activate the testbed, which prepares the service stubs for use.
-        self.testbed.activate()
-        # Next, declare which service stubs you want to use.
-        
-        self.testbed.init_datastore_v3_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_mail_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_taskqueue_stub(root_path="../.") #2.7
-        self.testbed.init_user_stub()
+        super(Test_CSV_Row_Encryption, self).setUp()
         
         self.request = webapp2.Request.blank('')
         self.request.META = {}
