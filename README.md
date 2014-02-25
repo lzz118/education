@@ -29,11 +29,15 @@ source ~/.bashrc
 ```
 
 
-You can then clone this project and setup you virtual environement:
+You can then clone this project and setup your virtual environement:
 ```
 git clone git@github.com:SingaporeClouds/education.git
 cd education
+git submodule update --init 
+git submodule foreach git stash
+git submodule foreach git pull origin master
 virtualenv pyenv
+source pyenv/bin/activate
 pip install -r dev-requirements.txt
 echo $GAEPATH >> pyenv/lib/python2.7/site-packages/gae.pth
 echo `pwd`/lib >> pyenv/lib/python2.7/site-packages/gae.pth
@@ -45,7 +49,9 @@ or
 ```
 git clone git@github.com:SingaporeClouds/education.git
 cd education
+make submodules
 make setup-dev
+source pyenv/bin/activate
 ```
 
 Remember to activate the virtual environement when working on the project:
