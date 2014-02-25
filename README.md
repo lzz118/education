@@ -5,6 +5,7 @@
 Requirements:
 - python2.7
 - virtualenv
+- git
 
 Install/update google app engine
 ```
@@ -28,8 +29,10 @@ source ~/.bashrc
 ```
 
 
-You can then setup you virtual environement:
+You can then clone this project and setup you virtual environement:
 ```
+git clone git@github.com:SingaporeClouds/education.git
+cd education
 virtualenv pyenv
 pip install -r dev-requirements.txt
 echo $GAEPATH >> pyenv/lib/python2.7/site-packages/gae.pth
@@ -40,6 +43,8 @@ echo "import dev_appserver; dev_appserver.fix_sys_path()" >> pyenv/lib/python2.7
 or
 
 ```
+git clone git@github.com:SingaporeClouds/education.git
+cd education
 make setup-dev
 ```
 
