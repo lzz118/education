@@ -11,44 +11,44 @@ app = webapp2.WSGIApplication(
     [
         webapp2.Route(
             r'/',
-            handler='education.controllers.MainHandler',
+            handler='api.controllers.MainHandler',
             name='home'
         ),
         webapp2.Route(
             r'/upload',
-            handler='education.controllers.UploadHandler',
+            handler='api.controllers.UploadHandler',
             name='upload'
         ),
         webapp2.Route(
             r'/serve/([^/]+)?',
-            handler='education.controllers.ServeHandler',
+            handler='api.controllers.ServeHandler',
             name='serve'
         ),
         webapp2.Route(
             r'/admin',
-            handler='education.admin.controllers.AdminConsoleHandler',
+            handler='api.admin.controllers.AdminConsoleHandler',
             name="admin.console"
         ),
         webapp2.Route(
             r'/admin/([^/]+)?',
-            handler='education.admin.controllers.AdminConsoleHandler',
+            handler='api.admin.controllers.AdminConsoleHandler',
             name="admin.console.action"
         ),
         webapp2.Route(
             r'/api/admin',
-            handler='education.admin.controllers.AdminApiHandler'
+            handler='api.admin.controllers.AdminApiHandler'
         ),
         webapp2.Route(
             r'/api/admin/([^/]+)?',
-            handler='education.admin.controllers.AdminApiHandler'
+            handler='api.admin.controllers.AdminApiHandler'
         ),
         webapp2.Route(
             r'/api/file',
-            handler='education.api.controllers.FileApiHandler'
+            handler='api.api.controllers.FileApiHandler'
         ),
         webapp2.Route(
             r'/api/file/([^/]+)?',
-            handler='education.api.controllers.FileApiHandler'
+            handler='api.api.controllers.FileApiHandler'
         ),
     ],
     debug=debug

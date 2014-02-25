@@ -4,7 +4,7 @@
 
 from google.appengine.ext import db
 
-from education.utils import JsonProperty
+from api.utils import JsonProperty
 
 
 class File(db.Model):

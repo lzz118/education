@@ -44,4 +44,4 @@ setup-dev:
 	@echo "Make sure you have google app engine installed in ${GAEPATH}"
 
 test:
-	${PYTHON} runtests.py --cover-package=education,main
+	${PYTHON} runtests.py --with-cover --cover-package=api,main

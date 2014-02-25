@@ -36,7 +36,7 @@ def get_args_parser():
         help='should run coverage.')
     parser.add_argument(
         '--cover-package', '-p',
-        default='education',
+        default='api',
         help='list of package to mesure coverage for.'
     )
     return parser

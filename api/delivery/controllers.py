@@ -10,8 +10,8 @@ import json
 from google.appengine.api import users
 from webapp2_extras.appengine.users import login_required
 
-from education.utils import FileUtils
-from education.delivery.models import File
+from api.utils import FileUtils
+from api.delivery.models import File
 
 
 class FileApiHandler(webapp2.RequestHandler):

@@ -10,7 +10,7 @@ from google.appengine.ext import testbed
 from google.appengine.api.blobstore import blobstore_stub, file_blob_storage
 from google.appengine.api.files import file_service_stub
 
-from education.delivery import models
+from api.delivery import models
 
 
 class TestbedWithFiles(testbed.Testbed):
