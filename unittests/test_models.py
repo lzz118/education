@@ -4,31 +4,28 @@ Created on Jan 8, 2014
 @author: Chris
 '''
 
-from google.appengine.ext import db
-from google.appengine.api import memcache
-from google.appengine.api import urlfetch
-from google.appengine.api import users
+import unittest
+
 from google.appengine.ext import testbed
 from google.appengine.api.blobstore import blobstore_stub, file_blob_storage
 from google.appengine.api.files import file_service_stub
-from google.appengine.ext import blobstore
 
-from django.utils import simplejson as json
-from Crypto.PublicKey import RSA
-import unittest
-import logging
-import models
+from education.delivery import models
+
 
 class TestbedWithFiles(testbed.Testbed):
     """See http://stackoverflow.com/questions/8130063/test-function-with-google-app-engine-files-api"""
 
     def init_blobstore_stub(self):
-        blob_storage = file_blob_storage.FileBlobStorage('/tmp/testbed.blobstore',
-                                                testbed.DEFAULT_APP_ID)
+        blob_storage = file_blob_storage.FileBlobStorage(
+            '/tmp/testbed.blobstore',
+            testbed.DEFAULT_APP_ID
+        )
         blob_stub = blobstore_stub.BlobstoreServiceStub(blob_storage)
         file_stub = file_service_stub.FileServiceStub(blob_storage)
         self._register_stub('blobstore', blob_stub)
         self._register_stub('file', file_stub)
+
 
 class Test_Models(unittest.TestCase):
 

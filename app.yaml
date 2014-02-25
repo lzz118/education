@@ -10,28 +10,19 @@ builtins:
 libraries:
 - name: pycrypto
   version: "2.6"
- 
+
 handlers:
 - url: /static
   static_dir: static
   expiration: 1m
-  
-- url: /content-delivery
-  static_dir: content-delivery
-  expiration: 1m
 
-- url: /swagger
-  static_dir: swagger
-  expiration: 1m
-  
-- url: /portfolio
-  static_dir: portfolio
-  expiration: 1m
-  
-- url: /scorecard
-  static_dir: scorecard
-  expiration: 1m
-
-# Move this to the api folder
 - url: /.*
   script: main.app
+
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+- ^pydev/.*$
