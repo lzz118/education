@@ -70,14 +70,17 @@ class TestStudent(TestCase):
         self.assertEqual('Alice', alice.first_name)
 
     def test_validate_student(self):
-        self.assertTrue(Student.validate(
-            {
-                'firstName': 'Alice',
-                'lastName': 'Smith',
-                'matricule': 'X2010200001',
-                'photo': 'http://placehold.it/300x400&text=portrait'
-            }
-        ))
+        self.assertEqual(
+            None,
+            Student.validate(
+                {
+                    'firstName': 'Alice',
+                    'lastName': 'Smith',
+                    'matricule': 'X2010200001',
+                    'photo': 'http://placehold.it/300x400&text=portrait'
+                }
+            )
+        )
         self.assertRaises(
             ValidationError,
             Student.validate,

@@ -17,6 +17,9 @@ from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 from webapp2_extras.appengine.users import login_required
 
+from api.utils import ApiRequestHandler
+from api import models
+
 
 class MainHandler(webapp2.RequestHandler):
     """Handler for the homepage.
@@ -135,3 +138,20 @@ class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
         resource = str(urllib.unquote(resource))
         blob_info = blobstore.BlobInfo.get(resource)
         self.send_blob(blob_info)
+
+
+class StudentApi(ApiRequestHandler):
+    """Handle Student resource.
+
+    """
+
+    def get(self):
+        """List all students (20 per page)
+
+        """
+        cursor_key = self.request.GET.get('cursor')
+        students, cursor, _ = models.Student.get_students(cursor_key)
+        return self.render_json({
+            'students': [s.data for s in students],
+            'cursor': cursor.urlsafe() if cursor else ''
+        })

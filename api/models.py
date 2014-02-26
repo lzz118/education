@@ -4,6 +4,8 @@
 
 import jsonschema
 from google.appengine.ext import ndb
+from google.appengine.datastore.datastore_query import Cursor
+
 
 # TODO: save in portfolio GUI project instead
 STUDENT_SCHEMA = {
@@ -24,7 +26,7 @@ class Student(ndb.Model):
     """Student entity model.
 
     """
-    data = ndb.JsonProperty()
+    data = ndb.JsonProperty(validator=lambda p, v: Student.validate(v))
 
     @property
     def last_name(self):
@@ -42,8 +44,6 @@ class Student(ndb.Model):
     def new_student(cls, data):
         """Create a new student entity from its json representation
 
-        TODO: validate json
-
         """
         @ndb.transactional(xg=True, retries=0)
         def tx():
@@ -58,10 +58,14 @@ class Student(ndb.Model):
             return student
         return tx()
 
+    @classmethod
+    def get_students(cls, cursor_key=None):
+        cursor = Cursor(urlsafe=cursor_key) if cursor_key else None
+        return cls.query().fetch_page(20, start_cursor=cursor)
+
     @staticmethod
     def validate(data):
         """Validate student data
 
         """
         jsonschema.validate(data, STUDENT_SCHEMA)
-        return True
