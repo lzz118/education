@@ -46,6 +46,7 @@ class TestStudent(TestCase):
         self.assertEqual('X2010200001', alice.key.id())
         self.assertEqual('Alice', alice.first_name)
         self.assertEqual('Smith', alice.last_name)
+        self.assertEqual('Smith, Alice', alice.full_name)
         self.assertEqual(None, alice.photo)
 
         alice = Student.get_by_id('X2010200001')

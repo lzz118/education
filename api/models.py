@@ -37,6 +37,12 @@ class Student(ndb.Model):
 
     """
     data = ndb.JsonProperty()
+    full_name = ndb.ComputedProperty(
+        lambda self: "%s, %s" % (
+            self.data.get('lastName'),
+            self.data.get('firstName'),
+        )
+    )
 
     @property
     def matricule(self):
@@ -94,7 +100,8 @@ class Student(ndb.Model):
 
         """
         cursor = Cursor(urlsafe=cursor_key) if cursor_key else None
-        return cls.query().fetch_page(20, start_cursor=cursor)
+        q = cls.query().order(cls.full_name)
+        return q.fetch_page(20, start_cursor=cursor)
 
     @staticmethod
     def validate(data):
