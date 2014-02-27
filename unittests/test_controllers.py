@@ -118,3 +118,29 @@ class TestStudentApi(TestCase):
         )
         self.assertIn('error', response.json)
 
+
+class TestUserApi(TestCase):
+
+    def setUp(self):
+        super(TestUserApi, self).setUp()
+
+        self.request = webapp2.Request.blank('')
+        self.request.META = {}
+        self.request.META['REMOTE_ADDR'] = '1.2.3.4'
+        self.app = TestApp(main.app)
+
+    def test_user_logged_off(self):
+        response = self.app.get('/api/v1/user.json', status=401)
+        self.assertIn('error', response.json)
+        self.assertIn('loginUrl', response.json)
+
+    def test_user_logged_in(self):
+        self.testbed.setup_env(
+            USER_EMAIL = 'test@example.com',
+            USER_ID = '123',
+            USER_IS_ADMIN = '0',
+            overwrite = True
+        )
+        response = self.app.get('/api/v1/user.json')
+        self.assertIn('logoutUrl', response.json)
+        self.assertEqual('test@example.com', response.json['name'])

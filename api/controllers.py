@@ -141,6 +141,34 @@ class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
         self.send_blob(blob_info)
 
 
+class UserApi(ApiRequestHandler):
+    """Handler request on user login status
+
+    """
+    def get(self):
+        """Return the user info if logged in or the url to login
+        if the user is logged off.
+
+        TODO: get and use user info instead of user nickname
+
+        """
+        user = users.get_current_user()
+        if user:
+            self.render_json({
+                'name': user.nickname(),
+                'logoutUrl': users.create_logout_url('/'),
+            })
+        else:
+            self.render_json(
+                {
+                    'error': "No user logged in",
+                    'loginUrl': users.create_login_url('/'),
+                },
+                401
+            )
+
+
+
 class StudentApi(ApiRequestHandler):
     """Handle Student resource.
 

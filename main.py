@@ -13,7 +13,8 @@ debug = os.environ.get('SERVER_SOFTWARE', '').startswith('Dev')
 apiv1_route = routes.PathPrefixRoute(
     r'/api/v1',
     [
-         webapp2.Route('/students.json', 'api.controllers.StudentApi'),
+        webapp2.Route('/user.json', 'api.controllers.UserApi'),
+        webapp2.Route('/students.json', 'api.controllers.StudentApi'),
     ]
 )
 

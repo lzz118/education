@@ -21,6 +21,24 @@ _education_schemas = {
             "matricule": {"type:": "string"},
         },
         "required": ["firstName", "lastName", "matricule"]
+    },
+    "user": {
+        "id": "#user",
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "logoutUrl": {"type:": "string"},
+        },
+        "required": ["name"]
+    },
+    "loginError": {
+        "id": "#login-error",
+        "type": "object",
+        "properties": {
+            "loginUrl": {"type:": "string"},
+            "error": {"type:": "string"},
+        },
+        "required": ["error", "loginUrl"]
     }
 }
 
