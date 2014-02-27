@@ -16,6 +16,7 @@ from google.appengine.api import users
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 from webapp2_extras.appengine.users import login_required
+from jsonschema import ValidationError
 
 from api.utils import ApiRequestHandler
 from api import models
@@ -155,3 +156,14 @@ class StudentApi(ApiRequestHandler):
             'students': [s.data for s in students],
             'cursor': cursor.urlsafe() if cursor else ''
         })
+
+    def post(self):
+        """Create a new student
+
+        """
+        try:
+            student = models.Student.new_student(self.request.json)
+        except ValidationError, e:
+            self.render_json({'error': e.message}, 400)
+        else:
+            self.render_json(student.data)

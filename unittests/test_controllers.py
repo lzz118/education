@@ -74,3 +74,47 @@ class TestStudentApi(TestCase):
         self.assertIn('cursor', response.json)
         self.assertIn('students', response.json)
         self.assertEqual(response.json.get('students'), [])
+
+    def testAddStudent(self):
+        response = self.app.post_json(
+            '/api/v1/students.json',
+            {
+                'firstName': 'Bob',
+                'lastName':  'Taylor',
+                'matricule': 'X2010200002',
+                'photo': 'http://placehold.it/300x400&text=portrait'
+            }
+
+        )
+        self.assertEqual(
+            {
+                'firstName': 'Bob',
+                'lastName':  'Taylor',
+                'matricule': 'X2010200002',
+                'photo': 'http://placehold.it/300x400&text=portrait'
+            },
+            response.json
+        )
+
+    def testAddStudentFails(self):
+        response = self.app.post_json(
+            '/api/v1/students.json',
+            {
+                'matricule': 'X2010200002',
+                'photo': 'http://placehold.it/300x400&text=portrait'
+            },
+            status=400
+        )
+        self.assertIn('error', response.json)
+
+        response = self.app.post_json(
+            '/api/v1/students.json',
+            {
+                'firstName': 'Bob',
+                'lastName':  'Taylor',
+                'photo': 'http://placehold.it/300x400&text=portrait'
+            },
+            status=400
+        )
+        self.assertIn('error', response.json)
+

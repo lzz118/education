@@ -159,6 +159,7 @@ class ApiRequestHandler(webapp2.RequestHandler):
 
     """
 
-    def render_json(self, data):
+    def render_json(self, data, status_code=200):
+        self.response.status = status_code
         self.response.headers['Content-Type'] = "application/json"
         self.response.write(json.dumps(data))
