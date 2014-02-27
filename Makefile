@@ -19,11 +19,10 @@ SRC=./
 
 
 serve:
-	open "http://localhost:${PORT}"
-	${PYTHON} ${APPSERVER} --port=${PORT} ${SRC}
+	${PYTHON} ${APPSERVER} --host=0.0.0.0 --port=${PORT} ${SRC}
 
 submodules:
-	git submodule update --init 
+	git submodule update --init
 	git submodule foreach git stash
 	git submodule foreach git pull origin master
 
