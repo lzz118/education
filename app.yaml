@@ -16,6 +16,25 @@ handlers:
   static_dir: static
   expiration: 1m
 
+- url: /swagger/
+  static_files: swagger/index.html
+  upload: swagger/api-docs/listing.json
+  expiration: 1s
+
+- url: /swagger/api-docs/
+  static_files: swagger/api-docs/listing.json
+  upload: swagger/api-docs/listing.json
+  expiration: 1s
+
+- url: /swagger
+  static_dir: swagger
+  expiration: 1s
+
+
+- url: /swagger
+  static_dir: swagger
+  expiration: 1s
+
 - url: /.*
   script: main.app
 
