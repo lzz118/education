@@ -10,9 +10,9 @@ import json
 from google.appengine.api import users
 from webapp2_extras.appengine.users import login_required
 
-from api.utils import FileUtils
+from api.utils import FileUtils, KeyUtils
+from api.exceptions import InvalidOperation
 from api.delivery.models import File
-
 
 class FileApiHandler(webapp2.RequestHandler):
    
@@ -32,7 +32,7 @@ class FileApiHandler(webapp2.RequestHandler):
                 blob_key = decoded_parameter.split(".")[0]
                 blob_info =FileUtils.get_blob_info(blob_key)
                 if blob_info:
-                    self.send_blob(blob_info)
+                    self.redirect("/serve/%s" % blob_key)
                 else:
                     self.abort(404)
             else:
@@ -78,7 +78,10 @@ class FileApiHandler(webapp2.RequestHandler):
         logging.info("Uploaded file_name:[%s] description:[%s] has_header_row:[%s] delimiter:[%s] encrypted_idxs[%s]" % (file_name, description, has_header_row, delimiter, encrypted_column_indexs))
 
         columns_info = []
-        [ encryption_key_info, encryption_key ] = FileUtils.get_publickey(user)
+        try:
+            [ encryption_key_info, encryption_key ] = KeyUtils.get_publickey(user)
+        except InvalidOperation as ex:
+            self.abort(400)
         blob_key = FileUtils.save_csv_file(file_data, encryption_key, has_header_row, delimiter, columns_for_encryption=encrypted_column_indexs, columns_info=columns_info)
         
         new_file = File()

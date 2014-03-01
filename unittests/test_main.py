@@ -58,6 +58,12 @@ class Test_CSV_Row_Encryption(TestCase):
         # User needs to login before redirected to the home page.
         self.assertEqual(response.status_int, 302)
 
+        self.login()
+        response = app.get('/')
+        # User shall be able to access the home page after login  
+        self.assertEqual(response.status_int, 200)
+        self.assertIn("AJAX Test GUI", response.body)
+
     def test_crypt(self):
         key = RSA.importKey(PRIVATE_KEY)
         for username in ['chris', 'bob', 'mary-joe add']:

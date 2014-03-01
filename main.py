@@ -22,10 +22,14 @@ app = webapp2.WSGIApplication(
     [
         webapp2.Route(r'/', 'api.controllers.MainHandler', name='home'),
         webapp2.Route(
-            r'/upload', 'api.controllers.UploadHandler', name='upload'
+            r'/upload',
+            'api.controllers.UploadHandler',
+            name='upload'
         ),
         webapp2.Route(
-            r'/serve/([^/]+)?', 'api.controllers.ServeHandler', name='serve'
+            r'/serve/<resource>',
+            'api.controllers.ServeHandler',
+            name='serve'
         ),
         webapp2.Route(
             r'/admin',
@@ -33,17 +37,29 @@ app = webapp2.WSGIApplication(
             name="admin.console"
         ),
         webapp2.Route(
-            r'/admin/([^/]+)?',
+            r'/admin/<action>',
             'api.admin.controllers.AdminConsoleHandler',
             name="admin.console.action"
         ),
-        webapp2.Route(r'/api/admin', 'api.admin.controllers.AdminApiHandler'),
         webapp2.Route(
-            r'/api/admin/([^/]+)?', 'api.admin.controllers.AdminApiHandler'
+            r'/api/admin', 
+            'api.admin.controllers.AdminApiHandler',
+            name="Admin api"
         ),
-        webapp2.Route(r'/api/file', 'api.api.controllers.FileApiHandler'),
         webapp2.Route(
-            r'/api/file/([^/]+)?', 'api.api.controllers.FileApiHandler'
+            r'/api/admin/<id>',
+            'api.admin.controllers.AdminApiHandler',
+            name="Admin api with parameter"
+        ),
+        webapp2.Route(
+            r'/api/file',
+            'api.delivery.controllers.FileApiHandler',
+            name="content delivery api"
+        ),
+        webapp2.Route(
+            r'/api/file/<parameter>',
+            'api.delivery.controllers.FileApiHandler',
+            name="content delievery api with parameter"
         ),
         apiv1_route
     ],

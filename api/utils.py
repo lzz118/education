@@ -8,7 +8,8 @@ from Crypto.PublicKey import RSA
 from google.appengine.api import files
 from google.appengine.ext import blobstore
 from google.appengine.ext import db
-
+from api.delivery.models import PublicKey
+from api.exceptions import InvalidOperation
 
 class JsonProperty(db.TextProperty):
     """Json model property
@@ -36,16 +37,7 @@ class JsonProperty(db.TextProperty):
         return super(JsonProperty, self).make_value_from_datastore(value)
 
 
-class FileUtils:
-
-    @staticmethod
-    def crypt(plaintext, encryption_key):
-        if not encryption_key:
-            return plaintext
-        enc_data = RSA.importKey(encryption_key).encrypt(plaintext, 32)
-        # encode the byte data into ASCII data so that it could be printed
-        # out in the browser
-        return enc_data[0].encode('base64')
+class KeyUtils:
 
     @staticmethod
     def get_publickey(user):
@@ -57,7 +49,7 @@ class FileUtils:
         keys.extend(PublicKey.all().filter('is_default_key = ', True).fetch(1))
         if len(keys) == 0:
             logging.error("No encryption key found for user %s" % user.nickname())
-            self.abort(400)
+            raise InvalidOperation("No excryption key is found")
         logging.info("Return encryption key with name [%s] , description [%s] , owned by [%s] for user %s" %
                      (keys[0].name, keys[0].description, keys[0].owner.nickname(), user.nickname()))
         return ({'key_name' : (keys[0]).name, 'key_description' : (keys[0]).description, 'key_owner' : (keys[0]).owner.email() }, (keys[0]).publickey)
@@ -85,6 +77,17 @@ class FileUtils:
         logging.info("Added a new keys with key name [%s] and key description [%s] for %s. It is a %s " %
                      (key_name, key_description, user.nickname(), "default encryption key" if is_default_key else "user encryption key"))
         return True
+
+class FileUtils:
+
+    @staticmethod
+    def crypt(plaintext, encryption_key):
+        if not encryption_key:
+            return plaintext
+        enc_data = RSA.importKey(encryption_key).encrypt(plaintext, 32)
+        # encode the byte data into ASCII data so that it could be printed
+        # out in the browser
+        return enc_data[0].encode('base64')
 
     @staticmethod
     def save_csv_file(data, encryption_key, has_header_row, delimiter, **kwds):

@@ -3,9 +3,7 @@
 """
 
 from google.appengine.ext import db
-
-from api.utils import JsonProperty
-
+from api.db_ext import JsonProperty
 
 class File(db.Model):
     """Model for file entity.
@@ -35,6 +33,7 @@ class PublicKey(db.Model):
     description = db.StringProperty()
     publickey = db.TextProperty() # public encryption key
     owner = db.UserProperty() #- the person uploading the file.
+    is_default_key = db.BooleanProperty()
     created = db.DateTimeProperty(auto_now_add=True)
 
 

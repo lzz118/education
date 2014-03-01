@@ -1,11 +1,11 @@
 import logging
 import json
-
+import urllib
 import webapp2
 from google.appengine.api import users
 from webapp2_extras.appengine.users import admin_required
 
-from api.utils import FileUtils
+from api.utils import FileUtils, KeyUtils
 from api.delivery.models import PublicKey
 
 
@@ -74,24 +74,30 @@ class AdminConsoleHandler(webapp2.RequestHandler):
 class AdminApiHandler(webapp2.RequestHandler):
     
     @admin_required
-    def get(self, action=None):
+    def get(self, id=None):
         """
             Serve /api/admin GET method for testing the admin apis.
         """
-        if action:
-            if action == "delete_key":
-                self.delete()
-            elif action == "edit_key":
-                self.put()
-            self.redirect("/admin")
+        response = []
+        publickeys = []
+        if id:
+            # For testing
+            #if action == "delete_key":
+            #    self.delete()
+            # For testing
+            #elif action == "edit_key":
+            #    self.put()
+            #else
+            id = str(urllib.unquote(id))
+            publickeys = [PublicKey.get_by_id(long(id))]
         else:
-            response = []
             publickeys = PublicKey.all().run(batch_size=1000)
-            for seq, publickey in enumerate(publickeys):
-                response.append({ 'key_name'  : publickey.name, 'key_description' : publickey.description, 
-                                    'key_owner' : str(publickey.owner.email()), 'created' : str(publickey.created), 
-                                    'is_default_key' : publickey.is_default_key, 'key_id' : publickey.key().id()})
-            self.response.out.write(json.dumps(response))
+        
+        for seq, publickey in enumerate(publickeys):
+            response.append({ 'key_name'  : publickey.name, 'key_description' : publickey.description, 
+                                'key_owner' : str(publickey.owner.email()), 'created' : str(publickey.created), 
+                                'is_default_key' : publickey.is_default_key, 'key_id' : publickey.key().id()})
+        self.response.out.write(json.dumps(response))
 
     def post(self):
         """
@@ -110,15 +116,15 @@ class AdminApiHandler(webapp2.RequestHandler):
             user = users.User(email)
             key_name = "encryption key for %s" % user.nickname()
             key_description = "The encryption key used for encrypting data uploaded by %s" % user.nickname()
-        is_success = FileUtils.save_publickey(key_data, key_name, key_description, is_default_key, user)                
+        is_success = KeyUtils.save_publickey(key_data, key_name, key_description, is_default_key, user)                
         self.response.write({'status' : 'success' if is_success else 'failure'})
     
-    def delete(self):
+    def delete(self, id=None):
         """
-            Serves /api/admin DELETE method.  It supports the deletion of the encryption keys by key id.
+            Serves /api/admin/id DELETE method.  It supports the deletion of the encryption keys by key id.
         """
-        id = self.request.get('id', None)
         if id:
+            id = str(urllib.unquote(id))
             public_key = PublicKey.get_by_id(long(id))
             if public_key:
                 public_key.delete()
@@ -128,14 +134,13 @@ class AdminApiHandler(webapp2.RequestHandler):
                 self.abort(404)
         self.abort(400)
 
-    def put(self):
+    def put(self, id=None):
         """
-            Serves /api/admin PUT method. It supports the changing of the encryption key value by key id.
+            Serves /api/admini/id PUT method. It supports the changing of the encryption key value by key id.
         """
-        id = self.request.get('id', None)
         key_data = self.request.get('key_data', None)
-        logging.info("In put method %s %s" % (id, key_data))
         if id and key_data:
+            id = str(urllib.unquote(id))
             public_key = PublicKey.get_by_id(long(id))
             if public_key:
                 public_key.publickey = key_data
