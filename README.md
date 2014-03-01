@@ -33,7 +33,7 @@ You can then clone this project and setup your virtual environement:
 ```
 git clone git@github.com:SingaporeClouds/education.git
 cd education
-git submodule update --init 
+git submodule update --init
 git submodule foreach git stash
 git submodule foreach git pull origin master
 virtualenv pyenv
@@ -61,7 +61,7 @@ source pyenv/bin/activate
 
 ## Depedencies
 
-Depedencies are installed with pip, and should be installed inside the 
+Depedencies are installed with pip, and should be installed inside the
 lib folder (using the `-t` option) if they need to be uploaded:
 
 ```
@@ -84,4 +84,15 @@ or
 
 ```
 make test
+```
+
+## Run dev server
+
+```
+dev_appserver.py --host=0.0.0.0 --port=8080 ./
+```
+
+or
+```
+make server
 ```

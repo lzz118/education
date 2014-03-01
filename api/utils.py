@@ -3,6 +3,7 @@ import csv
 import logging
 from StringIO import StringIO
 
+import webapp2
 from Crypto.PublicKey import RSA
 from google.appengine.api import files
 from google.appengine.ext import blobstore
@@ -36,16 +37,16 @@ class JsonProperty(db.TextProperty):
 
 
 class FileUtils:
-    
+
     @staticmethod
     def crypt(plaintext, encryption_key):
-        if not encryption_key:        
-            return plaintext 
+        if not encryption_key:
+            return plaintext
         enc_data = RSA.importKey(encryption_key).encrypt(plaintext, 32)
         # encode the byte data into ASCII data so that it could be printed
         # out in the browser
         return enc_data[0].encode('base64')
-    
+
     @staticmethod
     def get_publickey(user):
         keys=[]
@@ -72,16 +73,16 @@ class FileUtils:
 
         file_name = files.blobstore.create(mime_type='text/plain')
         with files.open(file_name, 'a') as f:
-            f.write(key_data) 
+            f.write(key_data)
         files.finalize(file_name)
         blob_key = files.blobstore.get_blob_key(file_name)
-        publickey = PublicKey(name=key_name, 
+        publickey = PublicKey(name=key_name,
                               description=key_description,
                               publickey=key_data,
                               is_default_key=is_default_key,
                               owner=user)
         publickey.put()
-        logging.info("Added a new keys with key name [%s] and key description [%s] for %s. It is a %s " % 
+        logging.info("Added a new keys with key name [%s] and key description [%s] for %s. It is a %s " %
                      (key_name, key_description, user.nickname(), "default encryption key" if is_default_key else "user encryption key"))
         return True
 
@@ -93,25 +94,25 @@ class FileUtils:
 
         with files.open(file_name, 'a') as f:
             writer = csv.writer(f , delimiter=delimiter.encode("utf-8"))
-            reader = csv.reader(StringIO(data), delimiter=delimiter.encode("utf-8")) 
-            
+            reader = csv.reader(StringIO(data), delimiter=delimiter.encode("utf-8"))
+
             if has_header_row:
                 header_row = next(reader)
                 # If there is a header line, then populate the column names
                 for idx, header in enumerate(header_row):
                     columns_info.append({'column_name':header, 'encrypted':True if idx in columns_for_encryption else False})
                 writer.writerow(header_row)
-            
+
             longest_row_len = 0
             for row in reader:
                 if longest_row_len < len(row):
                     longest_row_len = len(row)
-                
+
                 for index in columns_for_encryption:
                     if index < len(row):
                         row[index] = FileUtils.crypt(row[index], encryption_key)
                 writer.writerow(row)
-            
+
             # If there is no header line, calculate the size of the longest row, then set the column names to be empty
             if longest_row_len and not columns_info and not has_header_row:
                 for idx in range(longest_row_len):
@@ -151,3 +152,14 @@ class FileUtils:
     @staticmethod
     def get_meta_data(user, limit):
         pass
+
+
+class ApiRequestHandler(webapp2.RequestHandler):
+    """Base Request Handler for json API Request
+
+    """
+
+    def render_json(self, data, status_code=200):
+        self.response.status = status_code
+        self.response.headers['Content-Type'] = "application/json"
+        self.response.write(json.dumps(data))

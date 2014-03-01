@@ -3,67 +3,134 @@ Created on Jan 8, 2014
 
 @author: Chris
 '''
-
-import unittest
-
-from google.appengine.ext import testbed
-from google.appengine.api.blobstore import blobstore_stub, file_blob_storage
-from google.appengine.api.files import file_service_stub
-
 from api.delivery import models
+from api.models import Student
+from unittests.utils import TestCase
+from jsonschema import ValidationError
 
-
-class TestbedWithFiles(testbed.Testbed):
-    """See http://stackoverflow.com/questions/8130063/test-function-with-google-app-engine-files-api"""
-
-    def init_blobstore_stub(self):
-        blob_storage = file_blob_storage.FileBlobStorage(
-            '/tmp/testbed.blobstore',
-            testbed.DEFAULT_APP_ID
-        )
-        blob_stub = blobstore_stub.BlobstoreServiceStub(blob_storage)
-        file_stub = file_service_stub.FileServiceStub(blob_storage)
-        self._register_stub('blobstore', blob_stub)
-        self._register_stub('file', file_stub)
-
-
-class Test_Models(unittest.TestCase):
-
-    def setUp(self):
-        self.testbed = TestbedWithFiles()
-        #self.testbed = testbed.Testbed()
-        # Then activate the testbed, which prepares the service stubs for use.
-        self.testbed.activate()
-        # Next, declare which service stubs you want to use.
-        
-        self.testbed.init_datastore_v3_stub()
-        self.testbed.init_memcache_stub()
-        self.testbed.init_mail_stub()
-        self.testbed.init_blobstore_stub()
-        self.testbed.init_taskqueue_stub(root_path="../.") #2.7
-        
-    def tearDown(self):
-        self.testbed.deactivate()
+class TestModels(TestCase):
 
     def test_file(self):
         f = models.File()
         f.put()
-        self.assertEqual(1,models.File.all().count())
+        self.assertTrue(models.File.get(f.key()))
 
     def test_publickey(self):
         pk = models.PublicKey()
         pk.put()
-        self.assertEqual(1,models.PublicKey.all().count())
+        self.assertTrue(models.PublicKey.get(pk.key()))
 
     def test_ScheduledUpload(self):
         su = models.ScheduledUpload()
         su.put()
-        self.assertEqual(1,models.ScheduledUpload.all().count())
+        self.assertTrue(models.ScheduledUpload.get(su.key()))
 
     def test_ScheduledUploadFileAssociation(self):
         f = models.File()
         f.put()
-        
+
         sua = models.ScheduledUploadFileAssociation(file=f)
         sua.put()
-        self.assertEqual(1,models.ScheduledUploadFileAssociation.all().count())
+        self.assertTrue(models.ScheduledUploadFileAssociation.get(sua.key()))
+
+
+class TestStudent(TestCase):
+
+    def test_new_student(self):
+        alice = Student.new_student({
+            'firstName': 'Alice',
+            'lastName': 'Smith',
+            'matricule': 'X2010200001'
+        })
+        self.assertEqual('X2010200001', alice.matricule)
+        self.assertEqual('X2010200001', alice.key.id())
+        self.assertEqual('Alice', alice.first_name)
+        self.assertEqual('Smith', alice.last_name)
+        self.assertEqual('Smith, Alice', alice.full_name)
+        self.assertEqual(None, alice.photo)
+
+        alice = Student.get_by_id('X2010200001')
+        self.assertTrue(alice)
+
+    def test_new_student_create_unique_student(self):
+        Student.new_student({
+            'firstName': 'Alice',
+            'lastName': 'Smith',
+            'matricule': 'X2010200001'
+        })
+        self.assertRaises(
+            AttributeError,
+            Student.new_student,
+            {
+                'firstName': 'Bob',
+                'lastName': 'Smith',
+                'matricule': 'X2010200001' # same matricule
+            }
+        )
+
+        alice = Student.get_by_id('X2010200001')
+        self.assertEqual('Alice', alice.first_name)
+
+    def test_validate_student(self):
+        self.assertEqual(
+            None,
+            Student.validate(
+                {
+                    'firstName': 'Alice',
+                    'lastName': 'Smith',
+                    'matricule': 'X2010200001',
+                    'photo': 'http://placehold.it/300x400&text=portrait'
+                }
+            )
+        )
+        self.assertRaises(
+            ValidationError,
+            Student.validate,
+            {
+                'matricule': 'X2010200001'
+            }
+        )
+        self.assertRaises(
+            ValidationError,
+            Student.validate,
+            {
+                'firstName': 'Alice',
+                'lastName': 'Smith',
+            }
+        )
+
+    def test_update_student(self):
+        """the student data stay valide"""
+        Student.new_student({
+            'firstName': 'Alice',
+            'lastName': 'Smith',
+            'matricule': 'X2010200001'
+        })
+        alice = Student.get_by_id('X2010200001')
+        del alice.data['lastName']
+        self.assertRaises(ValidationError, alice.put)
+
+    def test_matricule_is_immutable(self):
+        """The student matricule cannot be edited"""
+        Student.new_student({
+            'firstName': 'Alice',
+            'lastName': 'Smith',
+            'matricule': 'X2010200001'
+        })
+        alice = Student.get_by_id('X2010200001')
+        alice.data['matricule'] += '1'
+        self.assertRaises(AttributeError, alice.put)
+
+    def test_names_are_capitalized(self):
+        alice = Student.new_student({
+            'firstName': 'alice',
+            'lastName': 'smith',
+            'matricule': 'X2010200001'
+        })
+        self.assertEqual('Alice', alice.first_name)
+        self.assertEqual('Smith', alice.last_name)
+
+        alice = Student.get_by_id('X2010200001')
+        alice.data['lastName'] = 'taylor'
+        alice.put()
+        self.assertEqual('Taylor', alice.last_name)

@@ -16,6 +16,10 @@ from google.appengine.api import users
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 from webapp2_extras.appengine.users import login_required
+from jsonschema import ValidationError
+
+from api.utils import ApiRequestHandler
+from api import models
 
 
 class MainHandler(webapp2.RequestHandler):
@@ -101,6 +105,10 @@ class UploadHandler(webapp2.RequestHandler):
                     row[1] = self.crypt(row[1])
                 writer.writerow(row)
         files.finalize(file_name)
+        # TODO: with high replication, the newly created file will not
+        # show in the list.
+        #
+        # It show redirect to a page listing the files instead
         blobs = blobstore.BlobInfo.all()
         blob_links = [
             '<a href="/serve/%s">File %s</a><br/>' % (blob.key(), index+1)
@@ -131,3 +139,59 @@ class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
         resource = str(urllib.unquote(resource))
         blob_info = blobstore.BlobInfo.get(resource)
         self.send_blob(blob_info)
+
+
+class UserApi(ApiRequestHandler):
+    """Handler request on user login status
+
+    """
+    def get(self):
+        """Return the user info if logged in or the url to login
+        if the user is logged off.
+
+        TODO: get and use user info instead of user nickname
+
+        """
+        user = users.get_current_user()
+        if user:
+            self.render_json({
+                'name': user.nickname(),
+                'logoutUrl': users.create_logout_url('/'),
+            })
+        else:
+            self.render_json(
+                {
+                    'error': "No user logged in",
+                    'loginUrl': users.create_login_url('/'),
+                },
+                401
+            )
+
+
+
+class StudentApi(ApiRequestHandler):
+    """Handle Student resource.
+
+    """
+
+    def get(self):
+        """List all students (20 per page)
+
+        """
+        cursor_key = self.request.GET.get('cursor')
+        students, cursor, _ = models.Student.get_students(cursor_key)
+        return self.render_json({
+            'students': [s.data for s in students],
+            'cursor': cursor.urlsafe() if cursor else ''
+        })
+
+    def post(self):
+        """Create a new student
+
+        """
+        try:
+            student = models.Student.new_student(self.request.json)
+        except ValidationError, e:
+            self.render_json({'error': e.message}, 400)
+        else:
+            self.render_json(student.data)
